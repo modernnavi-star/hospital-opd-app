@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/gray_light">
+
+    <androidx.appcompat.widget.Toolbar android:id="@+id/toolbar"
+        android:layout_width="match_parent" android:layout_height="?attr/actionBarSize"
+        android:background="@color/colorPrimary" android:theme="@style/ThemeOverlay.AppCompat.Dark"/>
+
+    <com.google.android.material.tabs.TabLayout android:id="@+id/tabLayout"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@color/colorPrimary"
+        app:tabTextColor="#bbf7d0" app:tabSelectedTextColor="@color/white"
+        app:tabIndicatorColor="@color/white" app:tabMode="fixed">
+        <com.google.android.material.tabs.TabItem android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📅 Daily"/>
+        <com.google.android.material.tabs.TabItem android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="🗓️ Monthly"/>
+        <com.google.android.material.tabs.TabItem android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📆 Yearly"/>
+        <com.google.android.material.tabs.TabItem android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="📊 All"/>
+    </com.google.android.material.tabs.TabLayout>
+
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="12dp">
+
+            <!-- Stat Cards -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginBottom="10dp">
+
+                <com.google.android.material.card.MaterialCardView android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:layout_margin="3dp" app:cardCornerRadius="10dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="vertical" android:padding="10dp" android:gravity="center">
+                        <TextView android:id="@+id/tvTotal" android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" android:text="0"
+                            android:textSize="24sp" android:textStyle="bold" android:textColor="@color/colorPrimary"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Total" android:textSize="11sp" android:textColor="#64748b"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:layout_margin="3dp" app:cardCornerRadius="10dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="vertical" android:padding="10dp" android:gravity="center">
+                        <TextView android:id="@+id/tvCompleted" android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" android:text="0"
+                            android:textSize="24sp" android:textStyle="bold" android:textColor="#059669"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Done" android:textSize="11sp" android:textColor="#64748b"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:layout_margin="3dp" app:cardCornerRadius="10dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="vertical" android:padding="10dp" android:gravity="center">
+                        <TextView android:id="@+id/tvWaiting" android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" android:text="0"
+                            android:textSize="24sp" android:textStyle="bold" android:textColor="#d97706"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="Waiting" android:textSize="11sp" android:textColor="#64748b"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <com.google.android.material.card.MaterialCardView android:layout_width="0dp"
+                    android:layout_height="wrap_content" android:layout_weight="1"
+                    android:layout_margin="3dp" app:cardCornerRadius="10dp">
+                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:orientation="vertical" android:padding="10dp" android:gravity="center">
+                        <TextView android:id="@+id/tvRevenue" android:layout_width="wrap_content"
+                            android:layout_height="wrap_content" android:text="Free"
+                            android:textSize="14sp" android:textStyle="bold" android:textColor="#0891b2"/>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="PHC Free" android:textSize="11sp" android:textColor="#64748b"/>
+                    </LinearLayout>
+                </com.google.android.material.card.MaterialCardView>
+
+                <TextView android:id="@+id/tvCancelled" android:layout_width="0dp"
+                    android:layout_height="0dp" android:visibility="gone"/>
+            </LinearLayout>
+
+            <!-- Complaint Breakdown -->
+            <com.google.android.material.card.MaterialCardView android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginBottom="10dp"
+                app:cardCornerRadius="10dp" app:cardElevation="3dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="vertical" android:padding="14dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="🤒 Complaint Breakdown"
+                        android:textStyle="bold" android:textSize="14sp"
+                        android:textColor="@color/colorPrimary" android:layout_marginBottom="8dp"/>
+                    <TextView android:id="@+id/tvComplaintBreakdown"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="No data" android:textSize="13sp"
+                        android:textColor="#374151" android:lineSpacingExtra="4dp"
+                        android:fontFamily="monospace"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Patient Records in App -->
+            <com.google.android.material.card.MaterialCardView android:layout_width="match_parent"
+                android:layout_height="wrap_content" android:layout_marginBottom="12dp"
+                app:cardCornerRadius="10dp" app:cardElevation="3dp">
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="vertical" android:padding="14dp">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="📋 Patient Records"
+                        android:textStyle="bold" android:textSize="14sp"
+                        android:textColor="@color/colorPrimary" android:layout_marginBottom="8dp"/>
+                    <TextView android:id="@+id/tvPatientList"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:text="No patients yet."
+                        android:textSize="12sp" android:textColor="#374151"
+                        android:lineSpacingExtra="3dp" android:fontFamily="monospace"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Export Buttons Row -->
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal" android:layout_marginBottom="16dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnExport"
+                    android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:layout_marginEnd="6dp"
+                    android:text="📤 Share PDF"
+                    app:backgroundTint="@color/colorPrimary"
+                    android:textSize="14sp"/>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPrint"
+                    android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="🖨️ Print PDF"
+                    app:backgroundTint="#0891b2"
+                    android:textSize="14sp"/>
+
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

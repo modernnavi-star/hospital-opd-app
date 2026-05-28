@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="5dp"
+    app:cardCornerRadius="10dp"
+    app:cardElevation="3dp">
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="12dp">
+
+        <!-- Top row: Token + Name + Edit/Delete -->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal" android:gravity="center_vertical">
+
+            <TextView android:id="@+id/tvToken"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:background="@color/colorPrimaryLight"
+                android:textColor="@color/colorPrimary"
+                android:textStyle="bold" android:textSize="11sp"
+                android:paddingHorizontal="8dp" android:paddingVertical="3dp"
+                android:layout_marginEnd="10dp"/>
+
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical">
+
+                <TextView android:id="@+id/tvName"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textSize="15sp" android:textStyle="bold" android:textColor="#1e293b"/>
+
+                <TextView android:id="@+id/tvInfo"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textSize="12sp" android:textColor="#4b5563"/>
+
+                <TextView android:id="@+id/tvVillage"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textSize="11sp" android:textColor="#9ca3af"/>
+
+                <TextView android:id="@+id/tvDiagnosis"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textSize="11.5sp" android:textColor="#1d4ed8"
+                    android:layout_marginTop="3dp"
+                    android:visibility="gone"/>
+
+                <TextView android:id="@+id/tvTreatment"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textSize="11.5sp" android:textColor="#059669"
+                    android:layout_marginTop="2dp"
+                    android:visibility="gone"/>
+            </LinearLayout>
+
+            <!-- Action buttons -->
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <ImageButton android:id="@+id/btnEdit"
+                    android:layout_width="36dp" android:layout_height="36dp"
+                    android:src="@android:drawable/ic_menu_edit"
+                    android:background="@color/colorPrimaryLight"
+                    android:tint="@color/colorPrimary"
+                    android:layout_marginBottom="4dp"
+                    android:contentDescription="Edit"/>
+
+                <ImageButton android:id="@+id/btnDelete"
+                    android:layout_width="36dp" android:layout_height="36dp"
+                    android:src="@android:drawable/ic_menu_delete"
+                    android:background="#fee2e2"
+                    android:tint="#dc2626"
+                    android:contentDescription="Delete"/>
+            </LinearLayout>
+
+        </LinearLayout>
+    </LinearLayout>
+</com.google.android.material.card.MaterialCardView>

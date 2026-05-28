@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/gray_light">
+
+    <LinearLayout android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- ══ HEADER ══ -->
+        <LinearLayout android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/header_bg"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <TextView android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🏥 PHC Holavanahalli"
+                android:textColor="@color/white"
+                android:textSize="20sp" android:textStyle="bold"/>
+
+            <TextView android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Primary Health Centre — OPD System"
+                android:textColor="#bbf7d0" android:textSize="12sp"
+                android:layout_marginTop="2dp"/>
+
+            <TextView android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="🩺 Medical Officer: Dr. Muniraju K G"
+                android:textColor="#86efac" android:textSize="12sp"
+                android:layout_marginTop="2dp"/>
+
+            <TextView android:id="@+id/tvDate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#fff" android:textSize="11sp"
+                android:layout_marginTop="8dp"
+                android:background="#33ffffff"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"/>
+
+            <!-- Hidden sync UI — sync works in background, not shown -->
+            <TextView android:id="@+id/tvSyncChip"
+                android:layout_width="0dp" android:layout_height="0dp"
+                android:visibility="gone"/>
+            <TextView android:id="@+id/tvSyncCardTitle"
+                android:layout_width="0dp" android:layout_height="0dp"
+                android:visibility="gone"/>
+            <TextView android:id="@+id/tvSyncCardSub"
+                android:layout_width="0dp" android:layout_height="0dp"
+                android:visibility="gone"/>
+
+        </LinearLayout>
+
+        <!-- ══ STATS ══ -->
+        <LinearLayout android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="10dp">
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:layout_margin="4dp"
+                app:cardCornerRadius="10dp" app:cardElevation="4dp">
+                <LinearLayout android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" android:padding="10dp"
+                    android:gravity="center">
+                    <TextView android:id="@+id/tvTotalPatients"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="0" android:textSize="26sp" android:textStyle="bold"
+                        android:textColor="@color/colorPrimary"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Today" android:textSize="11sp" android:textColor="#64748b"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:layout_margin="4dp"
+                app:cardCornerRadius="10dp" app:cardElevation="4dp">
+                <LinearLayout android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" android:padding="10dp"
+                    android:gravity="center">
+                    <TextView android:id="@+id/tvWaiting"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="0" android:textSize="26sp" android:textStyle="bold"
+                        android:textColor="#d97706"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Waiting" android:textSize="11sp" android:textColor="#64748b"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:layout_margin="4dp"
+                app:cardCornerRadius="10dp" app:cardElevation="4dp">
+                <LinearLayout android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" android:padding="10dp"
+                    android:gravity="center">
+                    <TextView android:id="@+id/tvCompleted"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="0" android:textSize="26sp" android:textStyle="bold"
+                        android:textColor="#059669"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Done" android:textSize="11sp" android:textColor="#64748b"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:layout_margin="4dp"
+                app:cardCornerRadius="10dp" app:cardElevation="4dp">
+                <LinearLayout android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical" android:padding="10dp"
+                    android:gravity="center">
+                    <TextView android:id="@+id/tvRevenue"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Free" android:textSize="16sp" android:textStyle="bold"
+                        android:textColor="#0891b2"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="PHC Free" android:textSize="11sp" android:textColor="#64748b"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+        </LinearLayout>
+
+        <!-- ══ MENU CARDS ══ -->
+        <LinearLayout android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="12dp"
+            android:paddingBottom="12dp">
+
+            <!-- Hidden cardSync — required by MainActivity code, not visible -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardSync"
+                android:layout_width="0dp" android:layout_height="0dp"
+                android:visibility="gone"
+                app:cardCornerRadius="0dp"/>
+
+            <!-- AI Raw Entry -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardAI"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                app:cardCornerRadius="12dp" app:cardElevation="4dp"
+                app:strokeColor="@color/purple" app:strokeWidth="2dp">
+                <LinearLayout android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:padding="16dp"
+                    android:gravity="center_vertical">
+                    <TextView android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🤖" android:textSize="32sp"
+                        android:layout_marginEnd="14dp"/>
+                    <LinearLayout android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="AI Raw Entry"
+                            android:textSize="16sp" android:textStyle="bold"
+                            android:textColor="@color/purple"/>
+                        <TextView android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Speak or type — AI organises"
+                            android:textSize="12sp" android:textColor="#64748b"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Register Patient -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardRegister"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                app:cardCornerRadius="12dp" app:cardElevation="4dp"
+                app:strokeColor="@color/colorPrimary" app:strokeWidth="1dp">
+                <LinearLayout android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:padding="16dp"
+                    android:gravity="center_vertical">
+                    <TextView android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="📝" android:textSize="32sp"
+                        android:layout_marginEnd="14dp"/>
+                    <LinearLayout android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Register Patient"
+                            android:textSize="16sp" android:textStyle="bold"
+                            android:textColor="@color/colorPrimary"/>
+                        <TextView android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="New OPD entry + auto token"
+                            android:textSize="12sp" android:textColor="#64748b"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- OPD Patient List -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardPatients"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                app:cardCornerRadius="12dp" app:cardElevation="4dp">
+                <LinearLayout android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:padding="16dp"
+                    android:gravity="center_vertical">
+                    <TextView android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="🧾" android:textSize="32sp"
+                        android:layout_marginEnd="14dp"/>
+                    <LinearLayout android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="OPD Patient List"
+                            android:textSize="16sp" android:textStyle="bold"
+                            android:textColor="#1e293b"/>
+                        <TextView android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Search, filter, update status"
+                            android:textSize="12sp" android:textColor="#64748b"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Reports -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardReports"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginBottom="10dp"
+                app:cardCornerRadius="12dp" app:cardElevation="4dp">
+                <LinearLayout android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal" android:padding="16dp"
+                    android:gravity="center_vertical">
+                    <TextView android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="📈" android:textSize="32sp"
+                        android:layout_marginEnd="14dp"/>
+                    <LinearLayout android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+                        <TextView android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Reports"
+                            android:textSize="16sp" android:textStyle="bold"
+                            android:textColor="#1e293b"/>
+                        <TextView android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Daily · Monthly · Yearly + PDF"
+                            android:textSize="12sp" android:textColor="#64748b"/>
+                    </LinearLayout>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

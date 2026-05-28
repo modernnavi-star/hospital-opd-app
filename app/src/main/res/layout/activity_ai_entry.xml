@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/gray_light">
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbar"
+        android:layout_width="match_parent"
+        android:layout_height="?attr/actionBarSize"
+        android:background="@color/purple"
+        android:theme="@style/ThemeOverlay.AppCompat.Dark"/>
+
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp"
+        android:layout_weight="1">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:padding="14dp">
+
+            <!-- Progress dots -->
+            <TextView android:id="@+id/tvProgress"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text="⚪ ⚪ ⚪ ⚪ ⚪ ⚪"
+                android:textSize="22sp" android:gravity="center"
+                android:layout_marginBottom="14dp"/>
+
+            <!-- Current field label -->
+            <TextView android:id="@+id/tvFieldLabel"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:text=""
+                android:textSize="15sp" android:textStyle="bold"
+                android:textColor="@color/purple"
+                android:gravity="center"
+                android:layout_marginBottom="6dp"/>
+
+            <!-- Current question -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="4dp"
+                app:strokeColor="@color/purple"
+                app:strokeWidth="2dp">
+
+                <LinearLayout android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp"
+                    android:background="#faf5ff">
+
+                    <TextView android:id="@+id/tvQuestion"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Tap Start — AI will ask each detail by voice and fill automatically"
+                        android:textSize="17sp"
+                        android:textStyle="bold"
+                        android:textColor="#1e1b4b"
+                        android:gravity="center"
+                        android:lineSpacingExtra="4dp"/>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Recording indicator + live text -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="12dp"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="3dp">
+
+                <LinearLayout android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <!-- Red dot + instruction row -->
+                    <LinearLayout android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="10dp">
+
+                        <!-- Blinking red dot -->
+                        <View android:id="@+id/vRecordingDot"
+                            android:layout_width="14dp"
+                            android:layout_height="14dp"
+                            android:background="@drawable/recording_dot"
+                            android:visibility="gone"
+                            android:layout_marginEnd="10dp"/>
+
+                        <TextView android:id="@+id/tvInstruction"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="No button clicks needed — fully automatic"
+                            android:textSize="12.5sp"
+                            android:textColor="#7c3aed"/>
+                    </LinearLayout>
+
+                    <!-- Live transcription — fills in real time as doctor speaks -->
+                    <TextView android:id="@+id/tvLiveText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text=""
+                        android:textSize="16sp"
+                        android:textColor="#1D4ED8"
+                        android:textStyle="italic"
+                        android:minHeight="56dp"
+                        android:gravity="center_vertical"
+                        android:lineSpacingExtra="4dp"
+                        android:background="#f0f9ff"
+                        android:padding="12dp"/>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- START button (only control needed) -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnStartStop"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:text="🚀 Start Voice Entry"
+                android:textSize="17sp"
+                android:textStyle="bold"
+                app:backgroundTint="@color/colorPrimary"
+                android:layout_marginBottom="14dp"/>
+
+            <!-- Live patient card — fills as answers come in -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="3dp"
+                android:layout_marginBottom="10dp">
+
+                <LinearLayout android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <TextView android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="📋 Patient Record (live)"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/colorPrimary"
+                        android:layout_marginBottom="8dp"/>
+
+                    <TextView android:id="@+id/tvPatientCard"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="⬜ 👤 Name: —\n⬜ 🎂 Age: —\n⬜ ⚧ Gender: —\n⬜ 📍 Village: —\n⬜ 🤒 Complaint: —\n⬜ 💊 Treatment: —\n━━━━━━━━━━━━━━━━━━━━\n🩺 Dr. Muniraju K G  |  Free PHC"
+                        android:textSize="13sp"
+                        android:textColor="#374151"
+                        android:fontFamily="monospace"
+                        android:lineSpacingExtra="5dp"/>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Hidden dummy views so old code references don't crash -->
+            <View android:id="@+id/btnRecord"     android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
+            <View android:id="@+id/btnOrganise"   android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
+            <View android:id="@+id/btnConfirm"    android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
+            <View android:id="@+id/tvTimer"       android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
+            <View android:id="@+id/tvStatus"      android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
+            <View android:id="@+id/tvMissing"     android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
+            <View android:id="@+id/etRawText"     android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
+            <View android:id="@+id/etComplaint"   android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
+            <View android:id="@+id/etTreatment"   android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
+            <View android:id="@+id/etDiagnosis"   android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone"/>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

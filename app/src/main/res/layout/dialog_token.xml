@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="wrap_content"
+    android:orientation="vertical" android:background="@color/white">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@drawable/header_bg" android:padding="16dp"
+        android:gravity="center">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="🏥 PHC Holavanahalli — OPD Token"
+            android:textColor="@color/white" android:textSize="14sp" android:textStyle="bold"/>
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:background="@color/colorPrimaryLight"
+        android:gravity="center" android:padding="20dp">
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="YOUR OPD TOKEN" android:textSize="11sp"
+            android:textColor="@color/colorPrimary" android:letterSpacing="0.15"/>
+        <TextView android:id="@+id/tvTokenNumber" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:textSize="48sp"
+            android:textStyle="bold" android:textColor="@color/colorPrimary"/>
+        <TextView android:id="@+id/tvDateTime" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:textSize="12sp" android:textColor="#6b7280"/>
+    </LinearLayout>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="16dp">
+        <TextView android:id="@+id/tvPatientName" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:textSize="16sp" android:textStyle="bold"/>
+        <TextView android:id="@+id/tvAgeGender" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:textSize="13sp" android:textColor="#4b5563"/>
+        <TextView android:id="@+id/tvVillage" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:textSize="13sp" android:textColor="#4b5563"/>
+        <TextView android:id="@+id/tvComplaint" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:textSize="13sp" android:textColor="#4b5563"/>
+        <TextView android:id="@+id/tvDoctor" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:textSize="13sp"
+            android:textColor="@color/colorPrimary" android:textStyle="bold"/>
+        <TextView android:id="@+id/tvPayment" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:textSize="13sp" android:textColor="#059669"/>
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="🔔 ದಯವಿಟ್ಟು ಕಾಯಿರಿ — Please wait for your token."
+            android:textSize="12sp" android:textColor="#6b7280"
+            android:gravity="center" android:layout_marginTop="10dp"/>
+    </LinearLayout>
+    <com.google.android.material.button.MaterialButton android:id="@+id/btnDone"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:text="✓ Done" android:backgroundTint="@color/colorPrimary"
+        android:layout_margin="16dp"/>
+</LinearLayout>
