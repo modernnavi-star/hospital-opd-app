@@ -20,7 +20,7 @@ public class SheetsSync {
     // Embedded URL — works immediately, no setup needed
     private static final String DEFAULT_URL =
         "https://script.google.com/macros/s/" +
-        "AKfycbzylMGnynzuvEhrSjKjbBU01yXDuKkgj5HCec1mZi-pBT0E4JnDZuHyZv5UmS2MUxt5/exec";
+        "AKfycbzjdX6TQ83GO5-8Sa15Y9Johdss8xQi3vnQUjmD3Tk7IQwNAANRtS5pnrV0pe071i6H/exec";
 
     public static void setWebAppUrl(Context ctx, String url) {
         ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
