@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.os.*;
 import android.speech.*;
 import android.speech.tts.*;
+import android.util.Log;
 import android.view.*;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
