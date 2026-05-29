@@ -41,7 +41,11 @@ public class GeminiClient {
             return;
         }
 
-        String prompt = "Extract patient information from the following medical transcription. " +
+        String prompt = "You are a professional medical scribe. Extract patient information from the following medical transcription. " +
+                        "CRITICAL: Correct any misspellings of medication names (e.g., 'Paracetmol' -> 'Paracetamol'), " +
+                        "medical terms, and symptoms based on clinical knowledge. " +
+                        "Normalize medication formats (e.g., 'Tab' for tablets, 'Inj' for injections) where appropriate. " +
+                        "Keep patient names and addresses exactly as spoken. " +
                         "Return the data as a raw JSON object with exactly these keys: " +
                         "\"patientName\", \"age\" (integer), \"gender\" (Male/Female/Other), " +
                         "\"address\", \"chiefComplaint\", \"treatmentGiven\", \"mobileNumber\". " +
