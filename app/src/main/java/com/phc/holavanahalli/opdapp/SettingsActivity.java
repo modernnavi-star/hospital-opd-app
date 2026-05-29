@@ -13,8 +13,8 @@ import com.google.android.material.textfield.TextInputEditText;
 
 public class SettingsActivity extends AppCompatActivity {
 
-    TextInputEditText etUrl;
-    MaterialButton    btnSave, btnTest, btnSync, btnCopyScript;
+    TextInputEditText etUrl, etGeminiKey;
+    MaterialButton    btnSave, btnTest, btnSync, btnCopyScript, btnSaveGemini;
     TextView          tvStatus;
 
     // The exact Apps Script to copy
@@ -45,7 +45,6 @@ public class SettingsActivity extends AppCompatActivity {
         "        d.complaint,d.diagnosis,d.treatment,d.doctor,d.paymentMode,\n" +
         "        d.status,d.hospital,new Date().toLocaleString()]]);\n" +
         "      return;\n" +
-        "    }\n" +
         "  }\n" +
         "  sheet.appendRow([d.opdNo,d.date,d.time,d.patientName,d.age,d.gender,\n" +
         "    d.village,d.mobile,d.bloodGroup,d.complaint,d.diagnosis,d.treatment,\n" +
@@ -79,18 +78,23 @@ public class SettingsActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setTitle("⚙️ Cloud Sync — Google Drive");
+        getSupportActionBar().setTitle("⚙️ App Configuration");
 
         etUrl         = findViewById(R.id.etSheetsUrl);
+        etGeminiKey   = findViewById(R.id.etGeminiKey);
         btnSave       = findViewById(R.id.btnSaveUrl);
+        btnSaveGemini = findViewById(R.id.btnSaveGemini);
         btnTest       = findViewById(R.id.btnTestSync);
         btnSync       = findViewById(R.id.btnSyncAll);
         btnCopyScript = findViewById(R.id.btnCopyScript);
         tvStatus      = findViewById(R.id.tvSyncStatus);
 
-        // Load saved URL
-        String saved = SheetsSync.getWebAppUrl(this);
-        if (!saved.isEmpty()) etUrl.setText(saved);
+        // Load saved settings
+        String savedUrl = SheetsSync.getWebAppUrl(this);
+        if (!savedUrl.isEmpty()) etUrl.setText(savedUrl);
+        
+        String savedKey = GeminiClient.getApiKey(this);
+        if (!savedKey.isEmpty()) etGeminiKey.setText(savedKey);
 
         refreshStatus();
 
@@ -101,6 +105,17 @@ public class SettingsActivity extends AppCompatActivity {
             clipboard.setPrimaryClip(clip);
             toast("✅ Script copied! Paste it in Apps Script editor.");
             btnCopyScript.setText("✅ Copied! Paste in Apps Script");
+        });
+
+        // ── Save Gemini Key ───────────────────────────────────
+        btnSaveGemini.setOnClickListener(v -> {
+            String key = etGeminiKey.getText() != null ? etGeminiKey.getText().toString().trim() : "";
+            if (key.isEmpty()) {
+                toast("Please paste the Gemini API Key first");
+                return;
+            }
+            GeminiClient.setApiKey(this, key);
+            toast("✅ AI Configuration saved!");
         });
 
         // ── Save URL ──────────────────────────────────────────
