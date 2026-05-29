@@ -10,13 +10,14 @@ public class Patient {
     public String bloodGroup;
     public String address;
     public String chiefComplaint;
-    public String diagnosis;         // NEW
-    public String treatmentGiven;    // NEW
+    public String diagnosis;         
+    public String treatmentGiven;    
     public String doctor;
     public String paymentMode;
     public String status;
     public String registrationDate;
     public String registrationTime;
+    public long   updatedAt;         // Last modification timestamp (epoch ms) for bidirectional sync
 
     public Patient() {
         this.doctor      = "Dr. Muniraju K G";
@@ -25,5 +26,6 @@ public class Patient {
         this.address     = "Holavanahalli";
         this.diagnosis   = "";
         this.treatmentGiven = "";
+        this.updatedAt   = System.currentTimeMillis();
     }
 }

@@ -11,7 +11,7 @@ import java.util.*;
 public class OPDDatabase extends SQLiteOpenHelper {
 
     private static final String DB_NAME    = "opd_database.db";
-    private static final int    DB_VERSION = 3;   // bumped for schema change
+    private static final int    DB_VERSION = 4;   // bumped for schema change with updatedAt
     private static final String TABLE      = "patients";
     private static OPDDatabase  instance;
 
@@ -40,7 +40,8 @@ public class OPDDatabase extends SQLiteOpenHelper {
             "paymentMode TEXT DEFAULT 'Free (PHC)'," +
             "status TEXT DEFAULT 'Completed'," +
             "registrationDate TEXT," +
-            "registrationTime TEXT" +
+            "registrationTime TEXT," +
+            "updatedAt INTEGER DEFAULT 0" + // Added for conflict resolution syncing
             ")");
     }
 
@@ -50,11 +51,14 @@ public class OPDDatabase extends SQLiteOpenHelper {
         try { db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN diagnosis TEXT DEFAULT ''"); } catch (Exception ignored) {}
         try { db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN treatmentGiven TEXT DEFAULT ''"); } catch (Exception ignored) {}
         try { db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN paymentMode TEXT DEFAULT 'Free (PHC)'"); } catch (Exception ignored) {}
+        try { db.execSQL("ALTER TABLE " + TABLE + " ADD COLUMN updatedAt INTEGER DEFAULT 0"); } catch (Exception ignored) {}
     }
 
     public long insertPatient(Patient p) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
+        p.updatedAt = System.currentTimeMillis(); // Track local modification time
+
         cv.put("tokenNumber",      p.tokenNumber);
         cv.put("patientName",      p.patientName);
         cv.put("age",              p.age);
@@ -70,10 +74,12 @@ public class OPDDatabase extends SQLiteOpenHelper {
         cv.put("status",           "Completed");
         cv.put("registrationDate", p.registrationDate);
         cv.put("registrationTime", p.registrationTime);
+        cv.put("updatedAt",        p.updatedAt);
+
         long rowId = db.insert(TABLE, null, cv);
         
-        // Auto-sync to Google Sheets / Drive (DISABLED for pure offline mode)
-        // SheetsSync.syncPatient(context, p);
+        // Auto-sync to Google Sheets / Drive in background thread
+        SheetsSync.syncPatient(context, p);
         
         return rowId;
     }
@@ -81,9 +87,21 @@ public class OPDDatabase extends SQLiteOpenHelper {
     // Direct insertion for data syncing back, avoiding re-triggering network sync loops
     public long insertPatientFromSync(Patient p) {
         SQLiteDatabase db = getWritableDatabase();
-        Cursor c = db.rawQuery("SELECT id FROM " + TABLE + " WHERE tokenNumber=?", new String[]{p.tokenNumber});
+        Cursor c = db.rawQuery("SELECT id, updatedAt FROM " + TABLE + " WHERE tokenNumber=?", new String[]{p.tokenNumber});
         boolean exists = c.moveToFirst();
+        
+        long localUpdatedAt = 0;
+        int localId = -1;
+        if (exists) {
+            localId = c.getInt(0);
+            localUpdatedAt = c.getLong(1);
+        }
         c.close();
+
+        // Bidirectional Sync: Only overwrite local data if incoming record has a newer modification time!
+        if (exists && localUpdatedAt >= p.updatedAt) {
+            return localId; // keep newer local copy
+        }
 
         ContentValues cv = new ContentValues();
         cv.put("tokenNumber",      p.tokenNumber);
@@ -101,9 +119,11 @@ public class OPDDatabase extends SQLiteOpenHelper {
         cv.put("status",           p.status != null ? p.status : "Completed");
         cv.put("registrationDate", p.registrationDate);
         cv.put("registrationTime", p.registrationTime);
+        cv.put("updatedAt",        p.updatedAt);
 
         if (exists) {
-            return db.update(TABLE, cv, "tokenNumber=?", new String[]{p.tokenNumber});
+            db.update(TABLE, cv, "tokenNumber=?", new String[]{p.tokenNumber});
+            return localId;
         } else {
             return db.insert(TABLE, null, cv);
         }
@@ -115,6 +135,8 @@ public class OPDDatabase extends SQLiteOpenHelper {
     public void updatePatient(Patient p) {
         SQLiteDatabase db = getWritableDatabase();
         ContentValues cv = new ContentValues();
+        p.updatedAt = System.currentTimeMillis(); // Update modification timestamp
+
         cv.put("patientName",    p.patientName);
         cv.put("age",            p.age);
         cv.put("gender",         p.gender);
@@ -124,11 +146,16 @@ public class OPDDatabase extends SQLiteOpenHelper {
         cv.put("chiefComplaint", p.chiefComplaint);
         cv.put("diagnosis",      p.diagnosis);
         cv.put("treatmentGiven", p.treatmentGiven);
+        cv.put("updatedAt",      p.updatedAt);
+
         db.update(TABLE, cv, "id=?", new String[]{String.valueOf(p.id)});
+        
+        // Auto-sync updated patient to Google Sheets
+        SheetsSync.syncPatient(context, p);
     }
 
     public void deletePatient(int id) {
-        // Get patient token before deleting
+        // Get patient token before deleting (needed for sheet sync)
         String tokenNumber = "";
         SQLiteDatabase rdb = getReadableDatabase();
         Cursor cur = rdb.rawQuery("SELECT tokenNumber FROM " + TABLE + " WHERE id=?",
@@ -139,10 +166,10 @@ public class OPDDatabase extends SQLiteOpenHelper {
         // Delete from local DB
         getWritableDatabase().delete(TABLE, "id=?", new String[]{String.valueOf(id)});
 
-        // Sync deletion to Google Sheet (DISABLED for pure offline mode)
-        // if (!tokenNumber.isEmpty()) {
-        //     SheetsSync.deleteFromSheet(context, tokenNumber);
-        // }
+        // Sync deletion to Google Sheet
+        if (!tokenNumber.isEmpty()) {
+            SheetsSync.deleteFromSheet(context, tokenNumber);
+        }
     }
 
     public String getNextToken() {
@@ -241,6 +268,11 @@ public class OPDDatabase extends SQLiteOpenHelper {
         p.status           = c.getString(c.getColumnIndexOrThrow("status"));
         p.registrationDate = c.getString(c.getColumnIndexOrThrow("registrationDate"));
         p.registrationTime = c.getString(c.getColumnIndexOrThrow("registrationTime"));
+        
+        // Read updatedAt
+        int idxUpdatedAt = c.getColumnIndex("updatedAt");
+        p.updatedAt = idxUpdatedAt >= 0 ? c.getLong(idxUpdatedAt) : 0L;
+
         // Safe column reads for new columns
         int diagIdx = c.getColumnIndex("diagnosis");
         p.diagnosis = diagIdx >= 0 ? c.getString(diagIdx) : "";

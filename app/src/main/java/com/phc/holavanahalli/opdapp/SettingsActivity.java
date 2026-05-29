@@ -17,25 +17,27 @@ public class SettingsActivity extends AppCompatActivity {
     MaterialButton    btnSave, btnTest, btnSync, btnCopyScript, btnRestoreFromSheet;
     TextView          tvStatus;
 
-    // The exact Apps Script to copy
+    // The exact, updated conflict-resolving Apps Script to copy
     static final String APPS_SCRIPT =
-        "var HEADERS=[\"OPD No\",\"Date\",\"Time\",\"Patient Name\",\"Age\",\"Gender\"," +
-        "\"Village\",\"Mobile\",\"Blood Group\",\"Complaint\",\"Diagnosis\"," +
-        "\"Treatment Given\",\"Doctor\",\"Payment\",\"Status\",\"Hospital\",\"Synced At\"];\n\n" +
-        "function doPost(e){\n" +
-        "  try{\n" +
-        "    var data=JSON.parse(e.postData.contents);\n" +
-        "    var sheet=getOrCreateSheet();\n" +
-        "    if(data.action===\"bulkSync\"){\n" +
-        "      var rows=data.rows;\n" +
-        "      for(var i=0;i<rows.length;i++) appendPatient(sheet,rows[i]);\n" +
-        "      return ok(\"Bulk: \"+rows.length+\" rows\");\n" +
+        "var HEADERS = [\n" +
+        "  \"OPD No\",\"Date\",\"Time\",\"Patient Name\",\"Age\",\"Gender\",\n" +
+        "  \"Village\",\"Mobile\",\"Blood Group\",\"Complaint\",\"Diagnosis\",\n" +
+        "  \"Treatment Given\",\"Doctor\",\"Payment\",\"Status\",\"Hospital\",\"Updated At\",\"Synced At\"\n" +
+        "];\n\n" +
+        "function doPost(e) {\n" +
+        "  try {\n" +
+        "    var data = JSON.parse(e.postData.contents);\n" +
+        "    var sheet = getOrCreateSheet();\n" +
+        "    if (data.action === \"bulkSync\") {\n" +
+        "      var rows = data.rows;\n" +
+        "      for (var i = 0; i < rows.length; i++) appendPatient(sheet, rows[i]);\n" +
+        "      return ok(\"Bulk Sync complete: \" + rows.length + \" records processed.\");\n" +
         "    }\n" +
-        "    appendPatient(sheet,data);\n" +
-        "    return ok(\"Saved: \"+data.opdNo);\n" +
-        "  }catch(err){return error(err.message);}\n" +
+        "    appendPatient(sheet, data);\n" +
+        "    return ok(\"Saved: \" + data.opdNo);\n" +
+        "  } catch (err) { return error(err.message); }\n" +
         "}\n\n" +
-        "function doGet(e){\n" +
+        "function doGet(e) {\n" +
         "  var action = e && e.parameter ? e.parameter.action : \"\";\n" +
         "  if (action === \"getData\") {\n" +
         "    try {\n" +
@@ -47,40 +49,59 @@ public class SettingsActivity extends AppCompatActivity {
         "  return ok(\"PHC Holavanahalli OPD Sync API is running! Records in sheet: \" +\n" +
         "    (getOrCreateSheet().getLastRow() - 1));\n" +
         "}\n\n" +
-        "function appendPatient(sheet,d){\n" +
-        "  var data=sheet.getDataRange().getValues();\n" +
-        "  for(var i=1;i<data.length;i++){\n" +
-        "    if(data[i][0]===d.opdNo){\n" +
-        "      sheet.getRange(i+1,1,1,HEADERS.length).setValues([[d.opdNo,d.date,d.time,\n" +
-        "        d.patientName,d.age,d.gender,d.village,d.mobile,d.bloodGroup,\n" +
-        "        d.complaint,d.diagnosis,d.treatment,d.doctor,d.paymentMode,\n" +
-        "        d.status,d.hospital,new Date().toLocaleString()]]);\n" +
+        "function appendPatient(sheet, d) {\n" +
+        "  var data = sheet.getDataRange().getValues();\n" +
+        "  var incomingUpdatedAt = Number(d.updatedAt) || 0;\n" +
+        "  for (var i = 1; i < data.length; i++) {\n" +
+        "    if (data[i][0] === d.opdNo) {\n" +
+        "      var sheetUpdatedAt = Number(data[i][16]) || 0;\n" +
+        "      if (sheetUpdatedAt > incomingUpdatedAt) {\n" +
+        "        return;\n" +
+        "      }\n" +
+        "      sheet.getRange(i+1, 1, 1, HEADERS.length).setValues([[\n" +
+        "        d.opdNo, d.date, d.time, d.patientName, d.age, d.gender,\n" +
+        "        d.village, d.mobile, d.bloodGroup, d.complaint, d.diagnosis,\n" +
+        "        d.treatment, d.doctor, d.paymentMode, d.status, d.hospital,\n" +
+        "        incomingUpdatedAt, new Date().toLocaleString()\n" +
+        "      ]]);\n" +
         "      return;\n" +
+        "    }\n" +
         "  }\n" +
-        "  sheet.appendRow([d.opdNo,d.date,d.time,d.patientName,d.age,d.gender,\n" +
-        "    d.village,d.mobile,d.bloodGroup,d.complaint,d.diagnosis,d.treatment,\n" +
-        "    d.doctor,d.paymentMode,d.status,d.hospital,new Date().toLocaleString()]);\n" +
-        "  var last=sheet.getLastRow();\n" +
-        "  if(last%2===0) sheet.getRange(last,1,1,HEADERS.length).setBackground(\"#f0fdf4\");\n" +
+        "  sheet.appendRow([\n" +
+        "    d.opdNo, d.date, d.time, d.patientName, d.age, d.gender,\n" +
+        "    d.village, d.mobile, d.bloodGroup, d.complaint, d.diagnosis,\n" +
+        "    d.treatment, d.doctor, d.paymentMode, d.status, d.hospital,\n" +
+        "    incomingUpdatedAt, new Date().toLocaleString()\n" +
+        "  ]);\n" +
+        "  var last = sheet.getLastRow();\n" +
+        "  if (last % 2 === 0)\n" +
+        "    sheet.getRange(last, 1, 1, HEADERS.length).setBackground(\"#f0fdf4\");\n" +
         "}\n\n" +
-        "function getOrCreateSheet(){\n" +
-        "  var ss=SpreadsheetApp.getActiveSpreadsheet();\n" +
-        "  var sheet=ss.getSheetByName(\"OPD Records\");\n" +
-        "  if(!sheet){\n" +
-        "    sheet=ss.insertSheet(\"OPD Records\");\n" +
-        "    sheet.getRange(1,1,1,HEADERS.length).setValues([HEADERS]);\n" +
-        "    var h=sheet.getRange(1,1,1,HEADERS.length);\n" +
-        "    h.setBackground(\"#14532d\");h.setFontColor(\"white\");\n" +
-        "    h.setFontWeight(\"bold\");h.setFontSize(10);\n" +
+        "function getOrCreateSheet() {\n" +
+        "  var ss    = SpreadsheetApp.getActiveSpreadsheet();\n" +
+        "  var sheet = ss.getSheetByName(\"OPD Records\");\n" +
+        "  if (!sheet) {\n" +
+        "    sheet = ss.insertSheet(\"OPD Records\");\n" +
+        "    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);\n" +
+        "    var h = sheet.getRange(1, 1, 1, HEADERS.length);\n" +
+        "    h.setBackground(\"#14532d\"); h.setFontColor(\"white\");\n" +
+        "    h.setFontWeight(\"bold\");    h.setFontSize(10);\n" +
         "    sheet.setFrozenRows(1);\n" +
-        "    var w=[80,85,65,130,40,65,120,100,70,180,160,220,130,80,75,110,130];\n" +
-        "    for(var i=0;i<w.length;i++) sheet.setColumnWidth(i+1,w[i]);\n" +
+        "    var w=[80,85,65,130,40,65,120,100,70,180,160,220,130,80,75,110,100,130];\n" +
+        "    for (var i=0; i<w.length; i++) sheet.setColumnWidth(i+1, w[i]);\n" +
         "  }\n" +
         "  return sheet;\n" +
         "}\n\n" +
-        "function ok(msg){return ContentService.createTextOutput(JSON.stringify({status:\"success\",message:msg})).setMimeType(ContentService.MimeType.JSON);}\n" +
-        "function ok2(obj){obj.status=\"success\"; return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);}\n" +
-        "function error(msg){return ContentService.createTextOutput(JSON.stringify({status:\"error\",message:msg})).setMimeType(ContentService.MimeType.JSON);}";
+        "function ok(msg) {\n" +
+        "  return ContentService.createTextOutput(JSON.stringify({status:\"success\",message:msg})).setMimeType(ContentService.MimeType.JSON);\n" +
+        "}\n" +
+        "function ok2(obj) {\n" +
+        "  obj.status = \"success\";\n" +
+        "  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);\n" +
+        "}\n" +
+        "function error(msg) {\n" +
+        "  return ContentService.createTextOutput(JSON.stringify({status:\"error\",message:msg})).setMimeType(ContentService.MimeType.JSON);\n" +
+        "}";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -178,14 +199,14 @@ public class SettingsActivity extends AppCompatActivity {
             syncAll(false);
         });
 
-        // ── Restore / Sync back patients from Sheet ───────────
+        // ── Bidirectional Sync and Restore ────────────────────
         if (btnRestoreFromSheet != null) {
             btnRestoreFromSheet.setOnClickListener(v -> {
                 if (!SheetsSync.isConfigured(this)) {
                     toast("Paste the Web App URL first, then Save");
                     return;
                 }
-                tvStatus.setText("⏳ Restoring data from Google Sheet...");
+                tvStatus.setText("⏳ Performing Bidirectional Cloud Sync...");
                 tvStatus.setBackgroundColor(0xFFFFF3CD);
                 tvStatus.setTextColor(0xFF92400E);
                 btnRestoreFromSheet.setEnabled(false);
@@ -193,15 +214,15 @@ public class SettingsActivity extends AppCompatActivity {
                 SheetsSync.syncBackFromSheet(this, (success, msg) -> runOnUiThread(() -> {
                     btnRestoreFromSheet.setEnabled(true);
                     if (success) {
-                        tvStatus.setText("✅ Restore complete!\n" + msg);
+                        tvStatus.setText("✅ Bidirectional Sync complete!\n\n" + msg);
                         tvStatus.setBackgroundColor(0xFFD1FAE5);
                         tvStatus.setTextColor(0xFF065F46);
-                        toast(msg);
+                        toast("✅ Sync complete!");
                     } else {
-                        tvStatus.setText("❌ Restore failed: " + msg);
+                        tvStatus.setText("❌ Sync-back failed:\n" + msg);
                         tvStatus.setBackgroundColor(0xFFFEE2E2);
                         tvStatus.setTextColor(0xFF991B1B);
-                        toast("❌ Restore failed: " + msg);
+                        toast("❌ Sync failed!");
                     }
                 }));
             });

@@ -82,7 +82,12 @@ public class SheetsSync {
         return row.optInt(idx, 0);
     }
 
-    // ── Download and Sync Data back from Sheets/Drive to Local DB ──
+    private static long getRowLong(JSONArray row, int idx) {
+        if (row == null || idx < 0 || idx >= row.length()) return 0L;
+        return row.optLong(idx, 0L);
+    }
+
+    // ── Download and Bidirectional Sync Data back from Sheets/Drive to Local DB ──
     public static void syncBackFromSheet(Context ctx, SyncCallback cb) {
         String url = getWebAppUrl(ctx);
         new Thread(() -> {
@@ -114,17 +119,24 @@ public class SheetsSync {
                 JSONObject json = new JSONObject(response);
                 if ("success".equals(json.optString("status"))) {
                     JSONArray rows = json.optJSONArray("rows");
+                    
+                    Map<String, Long> sheetTimestamps = new HashMap<>();
+                    
                     if (rows != null && rows.length() > 1) {
                         OPDDatabase db = OPDDatabase.getInstance(ctx);
-                        int count = 0;
-                        // Skip index 0 (header row)
+                        int restoreCount = 0;
+                        
+                        // First Pass: Import/Update SQLite database with Sheet Records (resolving timestamps)
                         for (int i = 1; i < rows.length(); i++) {
                             JSONArray row = rows.optJSONArray(i);
                             if (row != null && row.length() > 0) {
                                 String opdNo = getRowString(row, 0);
                                 if (opdNo == null || opdNo.trim().isEmpty() || !opdNo.contains("OPD")) {
-                                    continue; // skip invalid or empty rows
+                                    continue; // skip invalid rows
                                 }
+                                
+                                long sheetUpdatedAt = getRowLong(row, 16); // "Updated At" index 16
+                                sheetTimestamps.put(opdNo, sheetUpdatedAt);
                                 
                                 Patient p = new Patient();
                                 p.tokenNumber      = opdNo;
@@ -142,14 +154,38 @@ public class SheetsSync {
                                 p.doctor           = getRowString(row, 12);
                                 p.paymentMode      = getRowString(row, 13);
                                 p.status           = getRowString(row, 14);
+                                p.updatedAt        = sheetUpdatedAt;
                                 
                                 db.insertPatientFromSync(p);
-                                count++;
+                                restoreCount++;
                             }
                         }
-                        final int finalCount = count;
+                        
+                        // Second Pass: Find local records missing/newer on SQLite and push them to Sheets (Bidirectional Merge)
+                        List<Patient> localPatients = db.getAllPatients();
+                        List<Patient> patientsToPush = new ArrayList<>();
+                        
+                        for (Patient localP : localPatients) {
+                            if (!sheetTimestamps.containsKey(localP.tokenNumber)) {
+                                patientsToPush.add(localP);
+                            } else {
+                                long sheetTime = sheetTimestamps.get(localP.tokenNumber);
+                                if (localP.updatedAt > sheetTime) {
+                                    patientsToPush.add(localP); // Local copy is newer!
+                                }
+                            }
+                        }
+                        
+                        if (!patientsToPush.isEmpty()) {
+                            bulkPushToSheet(ctx, patientsToPush);
+                        }
+                        
+                        final int finalCount = restoreCount;
+                        final int pushCount = patientsToPush.size();
                         new Handler(Looper.getMainLooper()).post(() -> {
-                            if (cb != null) cb.onResult(true, "Successfully restored " + finalCount + " records from Google Sheet!");
+                            if (cb != null) cb.onResult(true, "Bidirectional sync complete!\n\n" +
+                                "📥 Downloaded: " + finalCount + " records.\n" +
+                                "📤 Uploaded: " + pushCount + " local updates to Sheet.");
                         });
                     } else {
                         new Handler(Looper.getMainLooper()).post(() -> {
@@ -174,6 +210,46 @@ public class SheetsSync {
         }).start();
     }
 
+    // ── Bulk Push To Sheet via HTTP POST with manual redirect following ──
+    private static void bulkPushToSheet(Context ctx, List<Patient> patients) {
+        String url = getWebAppUrl(ctx);
+        new Thread(() -> {
+            try {
+                JSONObject payload = new JSONObject();
+                payload.put("action", "bulkSync");
+                
+                JSONArray rows = new JSONArray();
+                for (Patient p : patients) {
+                    JSONObject j = new JSONObject();
+                    j.put("opdNo",          p.tokenNumber);
+                    j.put("date",           p.registrationDate);
+                    j.put("time",           p.registrationTime);
+                    j.put("patientName",    p.patientName);
+                    j.put("age",            p.age);
+                    j.put("gender",         p.gender);
+                    j.put("village",        p.address);
+                    j.put("mobile",         p.mobileNumber);
+                    j.put("bloodGroup",     p.bloodGroup);
+                    j.put("complaint",      p.chiefComplaint);
+                    j.put("diagnosis",      p.diagnosis);
+                    j.put("treatment",      p.treatmentGiven);
+                    j.put("doctor",         p.doctor);
+                    j.put("paymentMode",    p.paymentMode);
+                    j.put("status",         p.status);
+                    j.put("hospital",       "PHC Holavanahalli");
+                    j.put("updatedAt",      p.updatedAt);
+                    rows.put(j);
+                }
+                payload.put("rows", rows);
+                
+                String response = post(url, payload.toString());
+                Log.d(TAG, "Bulk Push Response: " + response);
+            } catch (Exception e) {
+                Log.e(TAG, "Bulk Push Error: " + e.getMessage());
+            }
+        }).start();
+    }
+
     // ── Build GET URL with patient data as query params ──────────────
     private static String buildGetUrl(String base, Patient p) throws Exception {
         return base
@@ -191,11 +267,61 @@ public class SheetsSync {
             + "&doctor="      + enc(p.doctor)
             + "&paymentMode=" + enc(p.paymentMode)
             + "&status="      + enc(p.status)
-            + "&hospital="    + enc("PHC Holavanahalli");
+            + "&hospital="    + enc("PHC Holavanahalli")
+            + "&updatedAt="   + p.updatedAt;
     }
 
     private static String enc(String s) throws Exception {
         return URLEncoder.encode(s != null ? s : "", "UTF-8");
+    }
+
+    // ── HTTP POST with Robust Manual Redirect Following ──
+    private static String post(String urlStr, String jsonPayload) throws Exception {
+        int redirects = 0;
+        String currentUrl = urlStr;
+        
+        while (redirects < 5) {
+            URL url = new URL(currentUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setDoOutput(true);
+            conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+            conn.setConnectTimeout(15_000);
+            conn.setReadTimeout(20_000);
+            conn.setInstanceFollowRedirects(false); // Handle redirect manually for safety
+
+            OutputStream os = conn.getOutputStream();
+            os.write(jsonPayload.getBytes("UTF-8"));
+            os.flush();
+            os.close();
+
+            int code = conn.getResponseCode();
+            
+            if (code == HttpURLConnection.HTTP_MOVED_TEMP || 
+                code == HttpURLConnection.HTTP_MOVED_PERM || 
+                code == 303 || code == 307 || code == 308) {
+                
+                String location = conn.getHeaderField("Location");
+                if (location != null && !location.isEmpty()) {
+                    currentUrl = location;
+                    redirects++;
+                    conn.disconnect();
+                    continue; // follow redirect
+                }
+            }
+
+            InputStream is = (code >= 200 && code < 400)
+                ? conn.getInputStream() : conn.getErrorStream();
+            if (is == null) return "HTTP " + code;
+
+            BufferedReader br = new BufferedReader(new InputStreamReader(is));
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = br.readLine()) != null) sb.append(line);
+            conn.disconnect();
+            return sb.toString();
+        }
+        throw new IOException("Too many redirects on POST");
     }
 
     // ── HTTP GET with Robust Manual Redirect Following (Resolves Google's HTTPS redirects) ──

@@ -18,7 +18,7 @@ import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final int CURRENT_APP_VERSION = 4; // incremented for update detection
+    private static final int CURRENT_APP_VERSION = 5; // incremented for fresh bidirectional sync release
 
     TextView          tvSyncChip, tvSyncCardTitle, tvSyncCardSub;
     MaterialCardView  cardSync;
@@ -62,11 +62,11 @@ public class MainActivity extends AppCompatActivity {
         cardReports.setOnClickListener(v ->
             startActivity(new Intent(this, ReportsActivity.class)));
 
-        // Flush retry queue on app start (DISABLED for offline mode)
-        // SheetsSync.flushRetryQueue(this);
+        // Flush retry queue on app start (Re-enabled for bidirectional cloud backup)
+        SheetsSync.flushRetryQueue(this);
 
-        // Check and trigger sync back from Sheets (DISABLED for offline mode)
-        // checkAndSyncBackData();
+        // Check and trigger sync back from Sheets (Re-enabled for bidirectional cloud backup)
+        checkAndSyncBackData();
     }
 
     private void checkAndSyncBackData() {
@@ -74,11 +74,11 @@ public class MainActivity extends AppCompatActivity {
         int lastRunVersion = prefs.getInt("last_run_version", 0);
         boolean isDbEmpty = OPDDatabase.getInstance(this).getAllPatients().isEmpty();
 
-        // If the database is empty (meaning a reinstall), show a clear dialog prompting them to restore!
+        // If the database is empty (reinstall or first run), show a clear dialog prompting them to restore!
         if (isDbEmpty) {
             showRestoreDialog();
         } else if (lastRunVersion < CURRENT_APP_VERSION) {
-            // On simple update, do a silent background sync-back
+            // On app update, perform an automated, silent bidirectional merge/sync in the background
             SheetsSync.syncBackFromSheet(this, new SheetsSync.SyncCallback() {
                 @Override
                 public void onResult(boolean success, String message) {
@@ -95,15 +95,15 @@ public class MainActivity extends AppCompatActivity {
 
     private void showRestoreDialog() {
         androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
-        builder.setTitle("📥 Cloud Data Restore");
-        builder.setMessage("We detected an empty local database (reinstall or first run).\n\n" +
-            "Would you like to restore your existing patient records back from your Google Sheet/Drive backup?\n\n" +
+        builder.setTitle("📥 Bidirectional Cloud Restore");
+        builder.setMessage("We detected an empty local database (reinstall, update, or crash recovery).\n\n" +
+            "Would you like to restore your patient records and synchronize data bidirectionally from your Google Sheet backup?\n\n" +
             "⚠️ IMPORTANT:\n" +
-            "1. If you used a custom Google Sheet URL, please configure it in Settings first.\n" +
-            "2. Make sure you have copied and redeployed the latest Apps Script from Settings so the sheet allows reading data.");
+            "1. If you are using a custom Google Sheet, verify your URL is configured in Settings first.\n" +
+            "2. Make sure you have copied and redeployed the latest Apps Script from Settings into your Google Sheet to support conflict-resolved bidirectional merging.");
         
-        builder.setPositiveButton("Restore Now", (dialog, which) -> {
-            Toast.makeText(this, "⏳ Connecting to Google Sheet...", Toast.LENGTH_SHORT).show();
+        builder.setPositiveButton("Sync & Restore Now", (dialog, which) -> {
+            Toast.makeText(this, "⏳ Running Bidirectional Sync...", Toast.LENGTH_SHORT).show();
             SheetsSync.syncBackFromSheet(this, new SheetsSync.SyncCallback() {
                 @Override
                 public void onResult(boolean success, String message) {
@@ -113,16 +113,16 @@ public class MainActivity extends AppCompatActivity {
                                 .edit().putInt("last_run_version", CURRENT_APP_VERSION).apply();
                             updateStats();
                             androidx.appcompat.app.AlertDialog.Builder successBuilder = new androidx.appcompat.app.AlertDialog.Builder(MainActivity.this);
-                            successBuilder.setTitle("✅ Restore Successful");
-                            successBuilder.setMessage(message + "\nYour local database has been successfully updated!");
+                            successBuilder.setTitle("✅ Sync & Restore Successful");
+                            successBuilder.setMessage(message + "\n\nAll records on both your phone and spreadsheet are fully synchronized!");
                             successBuilder.setPositiveButton("OK", null);
                             successBuilder.show();
                         } else {
                             androidx.appcompat.app.AlertDialog.Builder failBuilder = new androidx.appcompat.app.AlertDialog.Builder(MainActivity.this);
-                            failBuilder.setTitle("❌ Restore Failed");
+                            failBuilder.setTitle("❌ Sync & Restore Failed");
                             failBuilder.setMessage(message + "\n\n💡 Troubleshooting:\n" +
                                 "1. Ensure you have entered the correct Web App URL in settings.\n" +
-                                "2. Make sure you copied the latest Apps Script from Settings, pasted it in your Sheet, and clicked 'Deploy -> New Deployment'.");
+                                "2. Make sure you copied the latest Apps Script from Settings, pasted it in your Sheet, and clicked 'Deploy -> New Deployment' as a New Version.");
                             failBuilder.setPositiveButton("Configure Settings", (d, w) -> {
                                 startActivity(new Intent(MainActivity.this, SettingsActivity.class));
                             });
