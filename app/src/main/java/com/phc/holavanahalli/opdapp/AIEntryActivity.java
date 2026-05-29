@@ -29,6 +29,11 @@ public class AIEntryActivity extends AppCompatActivity
     TextView       tvInstruction;
     MaterialButton btnStartStop;
 
+    // ── Typing UI ───────────────────────────────────────────────
+    View           cardTypingInput;
+    EditText       etTypeInput;
+    MaterialButton btnSubmitType;
+
     // ── Speech ──────────────────────────────────────────────────
     SpeechRecognizer recognizer;
     TextToSpeech     tts;
@@ -40,16 +45,17 @@ public class AIEntryActivity extends AppCompatActivity
     Patient patient;
     int     step;          // which missing field we're asking (after initial listen)
     String  livePartial = "";
+    String  initialTextAccumulated = "";
     Handler handler = new Handler(Looper.getMainLooper());
 
-    // ── Phase: INITIAL (10s listen) or FILLING (ask missing) ───
+    // ── Phase: INITIAL (15s listen) or FILLING (ask missing) ───
     static final int PHASE_INITIAL = 0;
     static final int PHASE_FILLING = 1;
     int phase = PHASE_INITIAL;
 
-    // ── Countdown for initial 10s listen ───────────────────────
+    // ── Countdown for initial 15s listen ───────────────────────
     CountDownTimer initialCountdown;
-    int            countdownSec = 10;
+    int            countdownSec = 15;
 
     // ── Blinking dot ────────────────────────────────────────────
     boolean  dotVisible = true;
@@ -110,6 +116,21 @@ public class AIEntryActivity extends AppCompatActivity
         tvInstruction = findViewById(R.id.tvInstruction);
         btnStartStop  = findViewById(R.id.btnStartStop);
 
+        // Typing UI Initialisation
+        cardTypingInput = findViewById(R.id.cardTypingInput);
+        etTypeInput     = findViewById(R.id.etTypeInput);
+        btnSubmitType   = findViewById(R.id.btnSubmitType);
+
+        if (btnSubmitType != null) {
+            btnSubmitType.setOnClickListener(v -> submitManualInput());
+        }
+        if (etTypeInput != null) {
+            etTypeInput.setOnEditorActionListener((v, actionId, event) -> {
+                submitManualInput();
+                return true;
+            });
+        }
+
         tts = new TextToSpeech(this, this);
 
         btnStartStop.setOnClickListener(v -> {
@@ -157,40 +178,51 @@ public class AIEntryActivity extends AppCompatActivity
         tint(btnStartStop, 0xFFDC2626);
 
         setProgress("⚪ ⚪ ⚪ ⚪ ⚪ ⚪");
+        if (cardTypingInput != null) {
+            cardTypingInput.setVisibility(View.GONE);
+        }
 
-        // Tell doctor to speak all details in 10 seconds
-        speak("Please say all patient details now. You have 10 seconds.",
+        // Tell doctor to speak all details in 15 seconds
+        speak("Please say all patient details now. You have 15 seconds.",
               this::beginInitialListen);
     }
 
-    // ── PHASE 1 : 10-SECOND INITIAL LISTEN ─────────────────────
+    // ── PHASE 1 : 15-SECOND INITIAL LISTEN ─────────────────────
     private void beginInitialListen() {
         if (!sessionActive) return;
 
-        countdownSec = 10;
+        countdownSec = 15;
         livePartial  = "";
+        initialTextAccumulated = "";
 
         runOnUiThread(() -> {
             tvFieldLabel.setText("🎙️ Initial Recording");
             tvQuestion.setText("Speak all patient details now!\nName · Age · Village · Complaints · Treatment");
             tvLiveText.setText("");
-            tvInstruction.setText("🔴 Listening for 10 seconds — say everything");
+            tvInstruction.setText("🔴 Listening for 15 seconds — say everything");
+            if (cardTypingInput != null) cardTypingInput.setVisibility(View.GONE);
         });
 
-        startRecognizer(true);   // true = initial 10s mode
+        startRecognizer(true);   // true = initial 15s mode
 
         // Visible countdown
-        initialCountdown = new CountDownTimer(10_000, 1000) {
+        initialCountdown = new CountDownTimer(15_000, 1000) {
             @Override public void onTick(long ms) {
                 countdownSec = (int)(ms / 1000) + 1;
                 runOnUiThread(() -> tvFieldLabel.setText(
                     "🎙️ Recording... " + countdownSec + "s remaining"));
-                setProgress(countdownBar(10 - countdownSec));
+                setProgress(countdownBar(15 - countdownSec));
             }
             @Override public void onFinish() {
                 // Countdown done — stop recognizer, process whatever we got
                 stopRecognizer();
-                processInitialResult(livePartial);
+                if (livePartial != null && !livePartial.trim().isEmpty()) {
+                    if (!initialTextAccumulated.isEmpty()) {
+                        initialTextAccumulated += " ";
+                    }
+                    initialTextAccumulated += livePartial.trim();
+                }
+                processInitialResult(initialTextAccumulated);
             }
         }.start();
     }
@@ -198,7 +230,7 @@ public class AIEntryActivity extends AppCompatActivity
     // Progress bar for countdown
     private String countdownBar(int done) {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 10; i++) sb.append(i < done ? "🟢" : "⚪");
+        for (int i = 0; i < 15; i++) sb.append(i < done ? "🟢" : "⚪");
         return sb.toString();
     }
 
@@ -238,10 +270,10 @@ public class AIEntryActivity extends AppCompatActivity
         intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true);
         intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3);
         if (continuous) {
-            // Keep mic open as long as possible for the 10-second window
-            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 8500L);
-            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 8500L);
-            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 8500L);
+            // Keep mic open as long as possible for the 15-second window to prevent premature timeout
+            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 14500L);
+            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 14500L);
+            intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 14500L);
         } else {
             // Per-field listen — wait up to 6s for doctor to answer
             intent.putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 1500L);
@@ -263,10 +295,22 @@ public class AIEntryActivity extends AppCompatActivity
                     SpeechRecognizer.RESULTS_RECOGNITION);
                 if (arr != null && !arr.isEmpty()) {
                     livePartial = arr.get(0);
-                    runOnUiThread(() -> {
-                        tvLiveText.setText("✍️ " + livePartial);
-                        tvLiveText.setTextColor(0xFF1D4ED8);
-                    });
+                    if (phase == PHASE_FILLING) {
+                        runOnUiThread(() -> {
+                            tvLiveText.setText("✍️ " + livePartial);
+                            tvLiveText.setTextColor(0xFF1D4ED8);
+                            if (etTypeInput != null) {
+                                etTypeInput.setText(livePartial);
+                                etTypeInput.setSelection(livePartial.length());
+                            }
+                        });
+                    } else {
+                        String display = (initialTextAccumulated.isEmpty() ? "" : initialTextAccumulated + " ") + livePartial;
+                        runOnUiThread(() -> {
+                            tvLiveText.setText("✍️ " + display);
+                            tvLiveText.setTextColor(0xFF1D4ED8);
+                        });
+                    }
                 }
             }
 
@@ -281,8 +325,19 @@ public class AIEntryActivity extends AppCompatActivity
                 vRecordingDot.setVisibility(View.GONE);
 
                 if (phase == PHASE_INITIAL) {
-                    // Results came before 10s countdown finished — let countdown decide
-                    // Just keep livePartial updated; countdown onFinish will process
+                    if (livePartial != null && !livePartial.trim().isEmpty()) {
+                        if (!initialTextAccumulated.isEmpty()) {
+                            initialTextAccumulated += " ";
+                        }
+                        initialTextAccumulated += livePartial.trim();
+                        livePartial = "";
+                    }
+                    // Since countdown is still running, restart listening if it stopped early
+                    handler.postDelayed(() -> {
+                        if (sessionActive && phase == PHASE_INITIAL && !isListening) {
+                            startRecognizer(true);
+                        }
+                    }, 200);
                 } else {
                     // Filling a specific field
                     handleFieldResult(livePartial);
@@ -299,15 +354,19 @@ public class AIEntryActivity extends AppCompatActivity
                 boolean silentRetry = (error == 5 || error == 6 || error == 7);
 
                 if (phase == PHASE_INITIAL) {
-                    // During initial 10s — if we have partial text keep it
-                    // Countdown onFinish will process — if mic dropped early, restart it
-                    if (livePartial == null || livePartial.trim().isEmpty()) {
-                        // Restart mic silently (countdown still running)
-                        handler.postDelayed(() -> {
-                            if (sessionActive && phase == PHASE_INITIAL)
-                                startRecognizer(true);
-                        }, 300);
+                    if (livePartial != null && !livePartial.trim().isEmpty()) {
+                        if (!initialTextAccumulated.isEmpty()) {
+                            initialTextAccumulated += " ";
+                        }
+                        initialTextAccumulated += livePartial.trim();
+                        livePartial = "";
                     }
+                    // Restart mic silently (countdown still running) so we don't stop mid-way
+                    handler.postDelayed(() -> {
+                        if (sessionActive && phase == PHASE_INITIAL && !isListening) {
+                            startRecognizer(true);
+                        }
+                    }, 300);
                 } else {
                     // Per-field — use partial if available, else retry with question
                     if (livePartial != null && !livePartial.trim().isEmpty()) {
@@ -315,7 +374,7 @@ public class AIEntryActivity extends AppCompatActivity
                     } else if (silentRetry) {
                         // Silent retry — just open mic again
                         handler.postDelayed(() -> {
-                            if (sessionActive) startRecognizer(false);
+                            if (sessionActive && !isListening) startRecognizer(false);
                         }, 400);
                     } else {
                         // Speak question again then listen
@@ -326,7 +385,6 @@ public class AIEntryActivity extends AppCompatActivity
                     }
                 }
             }
-
 
             @Override public void onBeginningOfSpeech() {}
             @Override public void onEndOfSpeech() {}
@@ -483,7 +541,14 @@ public class AIEntryActivity extends AppCompatActivity
             tvFieldLabel.setText(FIELD_ICONS[fieldIdx] + " " + FIELD_NAMES[fieldIdx]);
             tvQuestion.setText("❓ " + TTS_QUESTIONS[fieldIdx]);
             tvLiveText.setText("");
-            tvInstruction.setText("🔴 Listening...");
+            tvInstruction.setText("🔴 Listening... or type below");
+
+            if (cardTypingInput != null) {
+                cardTypingInput.setVisibility(View.VISIBLE);
+                etTypeInput.setHint("Type " + FIELD_NAMES[fieldIdx] + "...");
+                etTypeInput.setText("");
+                etTypeInput.requestFocus();
+            }
         });
         updatePatientCard();
 
@@ -516,6 +581,9 @@ public class AIEntryActivity extends AppCompatActivity
             tvLiveText.setText("✅ " + val);
             tvLiveText.setTextColor(0xFF059669);
             tvInstruction.setText("✅ Got it...");
+            if (etTypeInput != null) {
+                etTypeInput.setText(val);
+            }
             updatePatientCard();
         });
 
@@ -526,7 +594,41 @@ public class AIEntryActivity extends AppCompatActivity
                 pendingCallback = null;
                 cb.run();
             }
-        }, 700);
+        }, 800);
+    }
+
+    // ── SUBMIT MANUAL TYPED INPUT ─────────────────────────────────
+    private void submitManualInput() {
+        if (!sessionActive || phase != PHASE_FILLING) return;
+
+        // Stop listening so speech recognition doesn't conflict
+        stopRecognizer();
+
+        String raw = etTypeInput.getText().toString().trim();
+        if (raw.isEmpty()) {
+            Toast.makeText(this, "Please enter some text or speak", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String val = autoCorrect(step, raw);
+        applyField(step, val);
+
+        runOnUiThread(() -> {
+            tvLiveText.setText("✅ " + val);
+            tvLiveText.setTextColor(0xFF059669);
+            tvInstruction.setText("✅ Saved manual input");
+            updatePatientCard();
+            etTypeInput.setText("");
+        });
+
+        // Move to next field after short delay
+        handler.postDelayed(() -> {
+            if (pendingCallback != null) {
+                Runnable cb = pendingCallback;
+                pendingCallback = null;
+                cb.run();
+            }
+        }, 800);
     }
 
     // ── AUTO-CORRECT PER FIELD ───────────────────────────────────
@@ -590,6 +692,9 @@ public class AIEntryActivity extends AppCompatActivity
             tvQuestion.setText("✅ Patient saved automatically!");
             tvLiveText.setText("");
             tvInstruction.setText("All done — no button needed");
+            if (cardTypingInput != null) {
+                cardTypingInput.setVisibility(View.GONE);
+            }
             updatePatientCard();
             btnStartStop.setText("➕ New Patient");
             tint(btnStartStop, 0xFF14532D);
@@ -645,8 +750,9 @@ public class AIEntryActivity extends AppCompatActivity
         patient       = null;
         phase         = PHASE_INITIAL;
         livePartial   = "";
+        initialTextAccumulated = "";
         runOnUiThread(() -> {
-            tvQuestion.setText("Tap Start — I'll listen for 10 seconds, then ask only what's missing");
+            tvQuestion.setText("Tap Start — I'll listen for 15 seconds, then ask only what's missing");
             tvLiveText.setText("");
             tvFieldLabel.setText("Ready");
             tvProgress.setText("⚪ ⚪ ⚪ ⚪ ⚪ ⚪");
@@ -657,6 +763,8 @@ public class AIEntryActivity extends AppCompatActivity
                 "━━━━━━━━━━━━━━━━━━━━\n🩺 Dr. Muniraju K G  |  Free PHC");
             btnStartStop.setText("🚀 Start Voice Entry");
             tint(btnStartStop, 0xFF14532D);
+            if (cardTypingInput != null) cardTypingInput.setVisibility(View.GONE);
+            if (etTypeInput != null) etTypeInput.setText("");
         });
     }
 

@@ -42,10 +42,13 @@
                         android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:hint="https://script.google.com/macros/s/.../exec"
                         android:layout_marginBottom="12dp">
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etSheetsUrl"
-                            android:layout_width="match_parent" android:layout_height="wrap_content"
-                            android:inputType="textUri" android:singleLine="true"/>
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:layout_width="match_parent" android:layout_height="wrap_content">
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/etSheetsUrl"
+                                android:layout_width="match_parent" android:layout_height="wrap_content"
+                                android:inputType="textUri" android:singleLine="true"/>
+                        </com.google.android.material.textfield.TextInputLayout>
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <com.google.android.material.button.MaterialButton
@@ -159,7 +162,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Test + Sync All buttons -->
+            <!-- Test + Sync All + Restore buttons -->
             <com.google.android.material.card.MaterialCardView android:layout_width="match_parent"
                 android:layout_height="wrap_content" android:layout_marginBottom="12dp"
                 app:cardCornerRadius="12dp" app:cardElevation="3dp">
@@ -182,7 +185,14 @@
                         android:id="@+id/btnSyncAll"
                         android:layout_width="match_parent" android:layout_height="wrap_content"
                         android:text="☁️ Sync All Patients to Google Sheet Now"
-                        app:backgroundTint="@color/colorPrimary"/>
+                        app:backgroundTint="@color/colorPrimary"
+                        android:layout_marginBottom="8dp"/>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnRestoreFromSheet"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:text="📥 Restore / Sync Back from Google Sheet Now"
+                        app:backgroundTint="#dc2626"/>
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>

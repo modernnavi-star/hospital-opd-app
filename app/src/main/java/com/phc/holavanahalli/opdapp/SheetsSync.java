@@ -71,6 +71,67 @@ public class SheetsSync {
         }).start();
     }
 
+    // ── Download and Sync Data back from Sheets/Drive to Local DB ──
+    public static void syncBackFromSheet(Context ctx, SyncCallback cb) {
+        String url = getWebAppUrl(ctx);
+        new Thread(() -> {
+            try {
+                String response = get(url + "?action=getData");
+                JSONObject json = new JSONObject(response);
+                if ("success".equals(json.optString("status"))) {
+                    JSONArray rows = json.optJSONArray("rows");
+                    if (rows != null && rows.length() > 1) {
+                        OPDDatabase db = OPDDatabase.getInstance(ctx);
+                        int count = 0;
+                        // Skip index 0 (header row)
+                        for (int i = 1; i < rows.length(); i++) {
+                            JSONArray row = rows.optJSONArray(i);
+                            if (row != null && row.length() >= 15) {
+                                Patient p = new Patient();
+                                p.tokenNumber      = row.optString(0);
+                                p.registrationDate = row.optString(1);
+                                p.registrationTime = row.optString(2);
+                                p.patientName      = row.optString(3);
+                                p.age              = row.optInt(4, 0);
+                                p.gender           = row.optString(5);
+                                p.address          = row.optString(6);
+                                p.mobileNumber     = row.optString(7);
+                                p.bloodGroup       = row.optString(8);
+                                p.chiefComplaint   = row.optString(9);
+                                p.diagnosis        = row.optString(10);
+                                p.treatmentGiven   = row.optString(11);
+                                p.doctor           = row.optString(12);
+                                p.paymentMode      = row.optString(13);
+                                p.status           = row.optString(14);
+                                
+                                db.insertPatientFromSync(p);
+                                count++;
+                            }
+                        }
+                        final int finalCount = count;
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            if (cb != null) cb.onResult(true, "Successfully restored " + finalCount + " records from Google Sheet!");
+                        });
+                    } else {
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            if (cb != null) cb.onResult(true, "No records found in Google Sheet.");
+                        });
+                    }
+                } else {
+                    String msg = json.optString("message", "Unknown error");
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                        if (cb != null) cb.onResult(false, "Sync-back failed: " + msg);
+                    });
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "Sync-back error: " + e.getMessage());
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    if (cb != null) cb.onResult(false, "Sync-back error: " + e.getMessage());
+                });
+            }
+        }).start();
+    }
+
     // ── Build GET URL with patient data as query params ──────────────
     private static String buildGetUrl(String base, Patient p) throws Exception {
         return base

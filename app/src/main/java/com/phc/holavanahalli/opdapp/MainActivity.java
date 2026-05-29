@@ -1,11 +1,15 @@
 package com.phc.holavanahalli.opdapp;
 
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.card.MaterialCardView;
 import java.text.SimpleDateFormat;
@@ -13,6 +17,8 @@ import java.util.Date;
 import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity {
+
+    private static final int CURRENT_APP_VERSION = 4; // incremented for update detection
 
     TextView          tvSyncChip, tvSyncCardTitle, tvSyncCardSub;
     MaterialCardView  cardSync;
@@ -58,6 +64,35 @@ public class MainActivity extends AppCompatActivity {
 
         // Flush retry queue on app start
         SheetsSync.flushRetryQueue(this);
+
+        // Check and trigger sync back from Sheets immediately on update/reinstall
+        checkAndSyncBackData();
+    }
+
+    private void checkAndSyncBackData() {
+        SharedPreferences prefs = getSharedPreferences("phc_prefs", MODE_PRIVATE);
+        int lastRunVersion = prefs.getInt("last_run_version", 0);
+        boolean isDbEmpty = OPDDatabase.getInstance(this).getAllPatients().isEmpty();
+
+        // Trigger immediate sync back if app version was updated OR if the local database is empty (reinstall)
+        if (lastRunVersion < CURRENT_APP_VERSION || isDbEmpty) {
+            Toast.makeText(this, "🔄 Re-syncing database with Cloud Storage...", Toast.LENGTH_LONG).show();
+
+            SheetsSync.syncBackFromSheet(this, new SheetsSync.SyncCallback() {
+                @Override
+                public void onResult(boolean success, String message) {
+                    if (success) {
+                        prefs.edit().putInt("last_run_version", CURRENT_APP_VERSION).apply();
+                        runOnUiThread(() -> {
+                            updateStats();
+                            Toast.makeText(MainActivity.this, "✅ Cloud database is up to date!", Toast.LENGTH_LONG).show();
+                        });
+                    } else {
+                        Log.e("MainActivity", "Sync back failed: " + message);
+                    }
+                }
+            });
+        }
     }
 
     @Override

@@ -14,7 +14,7 @@ import com.google.android.material.textfield.TextInputEditText;
 public class SettingsActivity extends AppCompatActivity {
 
     TextInputEditText etUrl;
-    MaterialButton    btnSave, btnTest, btnSync, btnCopyScript;
+    MaterialButton    btnSave, btnTest, btnSync, btnCopyScript, btnRestoreFromSheet;
     TextView          tvStatus;
 
     // The exact Apps Script to copy
@@ -35,7 +35,18 @@ public class SettingsActivity extends AppCompatActivity {
         "    return ok(\"Saved: \"+data.opdNo);\n" +
         "  }catch(err){return error(err.message);}\n" +
         "}\n\n" +
-        "function doGet(e){return ok(\"PHC OPD API running!\");}\n\n" +
+        "function doGet(e){\n" +
+        "  var action = e && e.parameter ? e.parameter.action : \"\";\n" +
+        "  if (action === \"getData\") {\n" +
+        "    try {\n" +
+        "      var sheet = getOrCreateSheet();\n" +
+        "      var rows  = sheet.getDataRange().getValues();\n" +
+        "      return ok2({ rows: rows, total: rows.length - 1 });\n" +
+        "    } catch (err) { return error(err.message); }\n" +
+        "  }\n" +
+        "  return ok(\"PHC Holavanahalli OPD Sync API is running! Records in sheet: \" +\n" +
+        "    (getOrCreateSheet().getLastRow() - 1));\n" +
+        "}\n\n" +
         "function appendPatient(sheet,d){\n" +
         "  var data=sheet.getDataRange().getValues();\n" +
         "  for(var i=1;i<data.length;i++){\n" +
@@ -68,6 +79,7 @@ public class SettingsActivity extends AppCompatActivity {
         "  return sheet;\n" +
         "}\n\n" +
         "function ok(msg){return ContentService.createTextOutput(JSON.stringify({status:\"success\",message:msg})).setMimeType(ContentService.MimeType.JSON);}\n" +
+        "function ok2(obj){obj.status=\"success\"; return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);}\n" +
         "function error(msg){return ContentService.createTextOutput(JSON.stringify({status:\"error\",message:msg})).setMimeType(ContentService.MimeType.JSON);}";
 
     @Override
@@ -80,12 +92,13 @@ public class SettingsActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setTitle("⚙️ Cloud Sync — Google Drive");
 
-        etUrl         = findViewById(R.id.etSheetsUrl);
-        btnSave       = findViewById(R.id.btnSaveUrl);
-        btnTest       = findViewById(R.id.btnTestSync);
-        btnSync       = findViewById(R.id.btnSyncAll);
-        btnCopyScript = findViewById(R.id.btnCopyScript);
-        tvStatus      = findViewById(R.id.tvSyncStatus);
+        etUrl               = findViewById(R.id.etSheetsUrl);
+        btnSave             = findViewById(R.id.btnSaveUrl);
+        btnTest             = findViewById(R.id.btnTestSync);
+        btnSync             = findViewById(R.id.btnSyncAll);
+        btnCopyScript       = findViewById(R.id.btnCopyScript);
+        btnRestoreFromSheet = findViewById(R.id.btnRestoreFromSheet);
+        tvStatus            = findViewById(R.id.tvSyncStatus);
 
         // Load saved URL
         String saved = SheetsSync.getWebAppUrl(this);
@@ -164,6 +177,35 @@ public class SettingsActivity extends AppCompatActivity {
             }
             syncAll(false);
         });
+
+        // ── Restore / Sync back patients from Sheet ───────────
+        if (btnRestoreFromSheet != null) {
+            btnRestoreFromSheet.setOnClickListener(v -> {
+                if (!SheetsSync.isConfigured(this)) {
+                    toast("Paste the Web App URL first, then Save");
+                    return;
+                }
+                tvStatus.setText("⏳ Restoring data from Google Sheet...");
+                tvStatus.setBackgroundColor(0xFFFFF3CD);
+                tvStatus.setTextColor(0xFF92400E);
+                btnRestoreFromSheet.setEnabled(false);
+
+                SheetsSync.syncBackFromSheet(this, (success, msg) -> runOnUiThread(() -> {
+                    btnRestoreFromSheet.setEnabled(true);
+                    if (success) {
+                        tvStatus.setText("✅ Restore complete!\n" + msg);
+                        tvStatus.setBackgroundColor(0xFFD1FAE5);
+                        tvStatus.setTextColor(0xFF065F46);
+                        toast(msg);
+                    } else {
+                        tvStatus.setText("❌ Restore failed: " + msg);
+                        tvStatus.setBackgroundColor(0xFFFEE2E2);
+                        tvStatus.setTextColor(0xFF991B1B);
+                        toast("❌ Restore failed: " + msg);
+                    }
+                }));
+            });
+        }
     }
 
     private void syncAll(boolean silent) {
@@ -204,12 +246,14 @@ public class SettingsActivity extends AppCompatActivity {
             tvStatus.setTextColor(0xFF065F46);
             btnTest.setEnabled(true);
             btnSync.setEnabled(true);
+            if (btnRestoreFromSheet != null) btnRestoreFromSheet.setEnabled(true);
         } else {
             tvStatus.setText("⚠️ Not configured — follow the 4 steps below");
             tvStatus.setBackgroundColor(0xFFFFF3CD);
             tvStatus.setTextColor(0xFF92400E);
             btnTest.setEnabled(false);
             btnSync.setEnabled(false);
+            if (btnRestoreFromSheet != null) btnRestoreFromSheet.setEnabled(false);
         }
     }
 

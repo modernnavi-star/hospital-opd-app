@@ -76,6 +76,37 @@ public class OPDDatabase extends SQLiteOpenHelper {
         return rowId;
     }
 
+    // Direct insertion for data syncing back, avoiding re-triggering network sync loops
+    public long insertPatientFromSync(Patient p) {
+        SQLiteDatabase db = getWritableDatabase();
+        Cursor c = db.rawQuery("SELECT id FROM " + TABLE + " WHERE tokenNumber=?", new String[]{p.tokenNumber});
+        boolean exists = c.moveToFirst();
+        c.close();
+
+        ContentValues cv = new ContentValues();
+        cv.put("tokenNumber",      p.tokenNumber);
+        cv.put("patientName",      p.patientName);
+        cv.put("age",              p.age);
+        cv.put("gender",           p.gender);
+        cv.put("mobileNumber",     p.mobileNumber);
+        cv.put("bloodGroup",       p.bloodGroup);
+        cv.put("address",          p.address);
+        cv.put("chiefComplaint",   p.chiefComplaint);
+        cv.put("diagnosis",        p.diagnosis != null ? p.diagnosis : "");
+        cv.put("treatmentGiven",   p.treatmentGiven != null ? p.treatmentGiven : "");
+        cv.put("doctor",           p.doctor);
+        cv.put("paymentMode",      p.paymentMode != null ? p.paymentMode : "Free (PHC)");
+        cv.put("status",           p.status != null ? p.status : "Completed");
+        cv.put("registrationDate", p.registrationDate);
+        cv.put("registrationTime", p.registrationTime);
+
+        if (exists) {
+            return db.update(TABLE, cv, "tokenNumber=?", new String[]{p.tokenNumber});
+        } else {
+            return db.insert(TABLE, null, cv);
+        }
+    }
+
     // context reference for sync
     private final android.content.Context context;
 
