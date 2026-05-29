@@ -36,9 +36,6 @@ public class AIEntryActivity extends AppCompatActivity
     boolean          isListening = false;
     boolean          sessionActive = false;
 
-    // ── AI ──────────────────────────────────────────────────────
-    GeminiClient     geminiClient = new GeminiClient();
-
     // ── State ───────────────────────────────────────────────────
     Patient patient;
     int     step;          // which missing field we're asking (after initial listen)
@@ -356,55 +353,21 @@ public class AIEntryActivity extends AppCompatActivity
         if (initialCountdown != null) { initialCountdown.cancel(); initialCountdown = null; }
     }
 
-    // ── PHASE 1 RESULT → extract all fields via GEMINI ──────────────────
+    // ── PHASE 1 RESULT → extract all fields ─────────────────────
     private void processInitialResult(String raw) {
         if (!sessionActive) return;
         phase = PHASE_FILLING;
 
         runOnUiThread(() -> {
-            tvLiveText.setText("✅ Got it — AI is organizing data...");
+            tvLiveText.setText("✅ Got it — checking what was captured...");
             tvLiveText.setTextColor(0xFF059669);
-            tvInstruction.setText("🤖 Gemini is processing...");
+            tvInstruction.setText("🔍 Extracting details...");
         });
 
-        if (raw == null || raw.trim().isEmpty()) {
-            finalizeInitialExtraction(null);
-            return;
-        }
+        // Extract everything from what doctor said using regex
+        if (raw != null && !raw.isEmpty()) extractAll(raw);
 
-        // Use Gemini to extract structured data
-        geminiClient.extractPatientData(this, raw, new GeminiClient.GeminiCallback() {
-            @Override
-            public void onSuccess(Patient extracted) {
-                runOnUiThread(() -> {
-                    // Update our patient object with Gemini's findings
-                    if (extracted != null) {
-                        if (!empty(extracted.patientName))    patient.patientName    = extracted.patientName;
-                        if (extracted.age > 0)              patient.age              = extracted.age;
-                        if (!empty(extracted.gender))         patient.gender         = extracted.gender;
-                        if (!empty(extracted.address))        patient.address        = extracted.address;
-                        if (!empty(extracted.chiefComplaint)) patient.chiefComplaint = extracted.chiefComplaint;
-                        if (!empty(extracted.treatmentGiven)) patient.treatmentGiven = extracted.treatmentGiven;
-                        if (!empty(extracted.mobileNumber))   patient.mobileNumber   = extracted.mobileNumber;
-                    }
-                    finalizeInitialExtraction(extracted);
-                });
-            }
-
-            @Override
-            public void onError(String error) {
-                Log.e("AIEntry", "Gemini Error: " + error);
-                runOnUiThread(() -> {
-                    tvInstruction.setText("⚠️ AI failed, using fallback logic");
-                    // FALLBACK: use the old regex logic if AI fails
-                    extractAllFallback(raw);
-                    finalizeInitialExtraction(null);
-                });
-            }
-        });
-    }
-
-    private void finalizeInitialExtraction(Patient extracted) {
+        // Show what was found
         runOnUiThread(this::updatePatientCard);
 
         // Find missing fields and ask them one by one
@@ -420,8 +383,8 @@ public class AIEntryActivity extends AppCompatActivity
         }
     }
 
-    // ── FALLBACK EXTRACTION (OLD REGEX LOGIC) ──────────────────────────
-    private void extractAllFallback(String raw) {
+    // ── EXTRACT ALL FROM INITIAL RAW TEXT ───────────────────────
+    private void extractAll(String raw) {
         String lower = raw.toLowerCase();
 
         // ── Name ──
@@ -434,6 +397,7 @@ public class AIEntryActivity extends AppCompatActivity
                 String w = nm.group(1).split(" ")[0];
                 if (!skip.contains(w)) { patient.patientName = nm.group(1); break; }
             }
+            // Fallback — first meaningful word
             if (patient.patientName == null || patient.patientName.isEmpty()) {
                 String[] words = raw.trim().split("\\s+");
                 if (words.length > 0) patient.patientName = toTitle(words[0]);
@@ -449,6 +413,7 @@ public class AIEntryActivity extends AppCompatActivity
                 if (a > 0 && a < 120) { patient.age = a; break; }
             }
             if (patient.age <= 0) {
+                // Word-to-number
                 String n = wordToNum(lower);
                 if (!n.isEmpty()) try { patient.age = Integer.parseInt(n); } catch (Exception e) {}
             }
@@ -483,7 +448,7 @@ public class AIEntryActivity extends AppCompatActivity
             if (!symptoms.isEmpty()) patient.chiefComplaint = symptoms;
         }
 
-        // ── Treatment ──
+        // ── Treatment — ONLY what doctor explicitly said ──
         if (patient.treatmentGiven == null || patient.treatmentGiven.isEmpty()) {
             String meds = extractMedicines(raw);
             if (!meds.isEmpty()) patient.treatmentGiven = meds;

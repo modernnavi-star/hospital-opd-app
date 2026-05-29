@@ -25,39 +25,6 @@
                 android:gravity="center"
                 android:text="⚠️ Cloud Sync not configured yet"/>
 
-            <!-- GEMINI API KEY INPUT -->
-            <com.google.android.material.card.MaterialCardView android:layout_width="match_parent"
-                android:layout_height="wrap_content" android:layout_marginBottom="12dp"
-                app:cardCornerRadius="12dp" app:cardElevation="4dp"
-                app:strokeColor="#7c3aed" app:strokeWidth="2dp">
-                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                    android:orientation="vertical" android:padding="16dp">
-
-                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="🤖 Step 0 — Gemini AI API Key"
-                        android:textSize="14sp" android:textStyle="bold"
-                        android:textColor="#7c3aed" android:layout_marginBottom="10dp"/>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:hint="Paste your Gemini API Key here"
-                        android:layout_marginBottom="12dp">
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/etGeminiKey"
-                            android:layout_width="match_parent" android:layout_height="wrap_content"
-                            android:inputType="textPassword" android:singleLine="true"/>
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnSaveGemini"
-                        android:layout_width="match_parent" android:layout_height="56dp"
-                        android:text="💾 Save AI Configuration"
-                        android:textSize="15sp" android:textStyle="bold"
-                        app:backgroundTint="#7c3aed"/>
-
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
             <!-- URL INPUT — most important, first -->
             <com.google.android.material.card.MaterialCardView android:layout_width="match_parent"
                 android:layout_height="wrap_content" android:layout_marginBottom="12dp"

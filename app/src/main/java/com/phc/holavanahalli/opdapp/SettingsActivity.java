@@ -13,8 +13,8 @@ import com.google.android.material.textfield.TextInputEditText;
 
 public class SettingsActivity extends AppCompatActivity {
 
-    TextInputEditText etUrl, etGeminiKey;
-    MaterialButton    btnSave, btnTest, btnSync, btnCopyScript, btnSaveGemini;
+    TextInputEditText etUrl;
+    MaterialButton    btnSave, btnTest, btnSync, btnCopyScript;
     TextView          tvStatus;
 
     // The exact Apps Script to copy
@@ -78,23 +78,18 @@ public class SettingsActivity extends AppCompatActivity {
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-        getSupportActionBar().setTitle("⚙️ App Configuration");
+        getSupportActionBar().setTitle("⚙️ Cloud Sync — Google Drive");
 
         etUrl         = findViewById(R.id.etSheetsUrl);
-        etGeminiKey   = findViewById(R.id.etGeminiKey);
         btnSave       = findViewById(R.id.btnSaveUrl);
-        btnSaveGemini = findViewById(R.id.btnSaveGemini);
         btnTest       = findViewById(R.id.btnTestSync);
         btnSync       = findViewById(R.id.btnSyncAll);
         btnCopyScript = findViewById(R.id.btnCopyScript);
         tvStatus      = findViewById(R.id.tvSyncStatus);
 
-        // Load saved settings
-        String savedUrl = SheetsSync.getWebAppUrl(this);
-        if (!savedUrl.isEmpty()) etUrl.setText(savedUrl);
-        
-        String savedKey = GeminiClient.getApiKey(this);
-        if (!savedKey.isEmpty()) etGeminiKey.setText(savedKey);
+        // Load saved URL
+        String saved = SheetsSync.getWebAppUrl(this);
+        if (!saved.isEmpty()) etUrl.setText(saved);
 
         refreshStatus();
 
@@ -105,17 +100,6 @@ public class SettingsActivity extends AppCompatActivity {
             clipboard.setPrimaryClip(clip);
             toast("✅ Script copied! Paste it in Apps Script editor.");
             btnCopyScript.setText("✅ Copied! Paste in Apps Script");
-        });
-
-        // ── Save Gemini Key ───────────────────────────────────
-        btnSaveGemini.setOnClickListener(v -> {
-            String key = etGeminiKey.getText() != null ? etGeminiKey.getText().toString().trim() : "";
-            if (key.isEmpty()) {
-                toast("Please paste the Gemini API Key first");
-                return;
-            }
-            GeminiClient.setApiKey(this, key);
-            toast("✅ AI Configuration saved!");
         });
 
         // ── Save URL ──────────────────────────────────────────
