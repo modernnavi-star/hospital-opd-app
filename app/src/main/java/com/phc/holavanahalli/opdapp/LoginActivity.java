@@ -8,10 +8,10 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.textfield.TextInputEditText;
+import com.google.firebase.FirebaseException;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.PhoneAuthCredential;
 import com.google.firebase.auth.PhoneAuthOptions;
-import com.google.firebase.auth.PhoneNumberAuthOptions;
 import com.google.firebase.auth.PhoneAuthProvider;
 
 public class LoginActivity extends AppCompatActivity {
@@ -74,8 +74,18 @@ public class LoginActivity extends AppCompatActivity {
                     }
 
                     @Override
-                    public void onVerificationFailed(com.google.firebase.auth.FirebaseException e) {
+                    public void onVerificationFailed(FirebaseException e) {
                         showError("Verification failed: " + e.getMessage());
+                    }
+
+                    @Override
+                    public void onCodeSent(String verificationId, PhoneAuthProvider.ForceResendingToken token) {
+                        LoginActivity.this.verificationId = verificationId;
+                        runOnUiThread(() -> {
+                            tvStatus.setText("OTP Sent successfully!");
+                            cardPhone.setVisibility(View.GONE);
+                            cardOtp.setVisibility(View.VISIBLE);
+                        });
                     }
                 }).build();
 
