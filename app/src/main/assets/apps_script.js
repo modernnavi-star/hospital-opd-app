@@ -19,9 +19,11 @@ function doPost(e) {
   } catch (err) { return error(err.message); }
 }
 
-// ── GET: read all data (for bidirectional sync) and single record query parameter saving ──
+// ── GET: read all data, delete rows, and save single records via query parameters ──
 function doGet(e) {
   var action = e && e.parameter ? e.parameter.action : "";
+  
+  // 1. Download full dataset
   if (action === "getData") {
     try {
       var sheet = getOrCreateSheet();
@@ -30,7 +32,23 @@ function doGet(e) {
     } catch (err) { return error(err.message); }
   }
   
-  // Support saving single records via GET query parameters (used by real-time syncPatient)
+  // 2. Delete record row matching OPD No
+  if (action === "delete") {
+    try {
+      var sheet = getOrCreateSheet();
+      var data = sheet.getDataRange().getValues();
+      var opdNo = e.parameter.opdNo;
+      for (var i = 1; i < data.length; i++) {
+        if (data[i][0] === opdNo) {
+          sheet.deleteRow(i + 1);
+          return ok("Deleted row for OPD No: " + opdNo);
+        }
+      }
+      return ok("Record not found: " + opdNo);
+    } catch (err) { return error(err.message); }
+  }
+  
+  // 3. Support saving single records via GET query parameters (used by real-time syncPatient)
   if (e && e.parameter && e.parameter.opdNo) {
     try {
       var sheet = getOrCreateSheet();

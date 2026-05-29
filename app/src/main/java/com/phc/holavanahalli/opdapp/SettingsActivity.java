@@ -17,7 +17,7 @@ public class SettingsActivity extends AppCompatActivity {
     MaterialButton    btnSave, btnTest, btnSync, btnCopyScript, btnRestoreFromSheet;
     TextView          tvStatus;
 
-    // The exact, updated conflict-resolving Apps Script to copy
+    // The exact, updated conflict-resolving Apps Script to copy (including Delete action!)
     static final String APPS_SCRIPT =
         "var HEADERS = [\n" +
         "  \"OPD No\",\"Date\",\"Time\",\"Patient Name\",\"Age\",\"Gender\",\n" +
@@ -44,6 +44,20 @@ public class SettingsActivity extends AppCompatActivity {
         "      var sheet = getOrCreateSheet();\n" +
         "      var rows  = sheet.getDataRange().getValues();\n" +
         "      return ok2({ rows: rows, total: rows.length - 1 });\n" +
+        "    } catch (err) { return error(err.message); }\n" +
+        "  }\n" +
+        "  if (action === \"delete\") {\n" +
+        "    try {\n" +
+        "      var sheet = getOrCreateSheet();\n" +
+        "      var data = sheet.getDataRange().getValues();\n" +
+        "      var opdNo = e.parameter.opdNo;\n" +
+        "      for (var i = 1; i < data.length; i++) {\n" +
+        "        if (data[i][0] === opdNo) {\n" +
+        "          sheet.deleteRow(i + 1);\n" +
+        "          return ok(\"Deleted row for OPD No: \" + opdNo);\n" +
+        "        }\n" +
+        "      }\n" +
+        "      return ok(\"Record not found: \" + opdNo);\n" +
         "    } catch (err) { return error(err.message); }\n" +
         "  }\n" +
         "  if (e && e.parameter && e.parameter.opdNo) {\n" +
@@ -110,8 +124,8 @@ public class SettingsActivity extends AppCompatActivity {
         "    sheet = ss.insertSheet(\"OPD Records\");\n" +
         "    sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);\n" +
         "    var h = sheet.getRange(1, 1, 1, HEADERS.length);\n" +
-        "    h.setBackground(\"#14532d\"); h.setFontColor(\"white\");\n" +
-        "    h.setFontWeight(\"bold\");    h.setFontSize(10);\n" +
+        "    h.setBackground("#14532d"); h.setFontColor("white");\n" +
+        "    h.setFontWeight("bold");    h.setFontSize(10);\n" +
         "    sheet.setFrozenRows(1);\n" +
         "    var w=[80,85,65,130,40,65,120,100,70,180,160,220,130,80,75,110,100,130];\n" +
         "    for (var i=0; i<w.length; i++) sheet.setColumnWidth(i+1, w[i]);\n" +
