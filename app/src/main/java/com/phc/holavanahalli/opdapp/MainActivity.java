@@ -151,6 +151,9 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         updateStats();
         updateSyncUI();
+        
+        // Silent background bidirectional sync whenever returning to the Main Dashboard!
+        SheetsSync.syncBackFromSheet(this, null);
     }
 
     private void updateStats() {

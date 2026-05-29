@@ -16,11 +16,14 @@ public class SheetsSync {
     private static final String TAG     = "SheetsSync";
     private static final String PREF    = "phc_prefs";
     private static final String KEY_URL = "sheets_url";
+    
+    // Concurrency guard to prevent overlapping sync cycles
+    private static boolean isSyncActive = false;
 
     // Embedded URL — works immediately, no setup needed
     private static final String DEFAULT_URL =
         "https://script.google.com/macros/s/" +
-        "AKfycbzjdX6TQ83GO5-8Sa15Y9Johdss8xQi3vnQUjmD3Tk7IQwNAANRtS5pnrV0pe071i6H/exec";
+        "AKfycbzw6mX3gMqi5FlzDEXfkbPczlNRQBxTK_Kq4ks-CKe8-hcaORifeVYWyE5Y_itAwLPRfg/exec";
 
     public static void setWebAppUrl(Context ctx, String url) {
         ctx.getSharedPreferences(PREF, Context.MODE_PRIVATE)
@@ -42,7 +45,12 @@ public class SheetsSync {
             try {
                 String result = get(buildGetUrl(url, p));
                 Log.d(TAG, "Sync: " + result);
-                if (result.contains("error")) queueRetry(ctx, p);
+                if (result.contains("error")) {
+                    queueRetry(ctx, p);
+                } else {
+                    // Trigger a silent background bidirectional sync to keep everything in sync
+                    syncBackFromSheet(ctx, null);
+                }
             } catch (Exception e) {
                 Log.e(TAG, "Sync error: " + e.getMessage());
                 queueRetry(ctx, p);
@@ -89,6 +97,12 @@ public class SheetsSync {
 
     // ── Download and Bidirectional Sync Data back from Sheets/Drive to Local DB ──
     public static void syncBackFromSheet(Context ctx, SyncCallback cb) {
+        if (isSyncActive) {
+            if (cb != null) cb.onResult(false, "Sync is already in progress...");
+            return;
+        }
+        isSyncActive = true;
+        
         String url = getWebAppUrl(ctx);
         new Thread(() -> {
             try {
@@ -103,6 +117,7 @@ public class SheetsSync {
                     response.contains("accounts.google.com") ||
                     response.contains("ServiceLogin")) {
                     
+                    isSyncActive = false; // Reset flag on error
                     new Handler(Looper.getMainLooper()).post(() -> {
                         if (cb != null) cb.onResult(false, 
                             "🔒 Permission Denied by Google (Sign-in Required)\n\n" +
@@ -180,6 +195,7 @@ public class SheetsSync {
                             bulkPushToSheet(ctx, patientsToPush);
                         }
                         
+                        isSyncActive = false; // Reset flag on success
                         final int finalCount = restoreCount;
                         final int pushCount = patientsToPush.size();
                         new Handler(Looper.getMainLooper()).post(() -> {
@@ -188,6 +204,7 @@ public class SheetsSync {
                                 "📤 Uploaded: " + pushCount + " local updates to Sheet.");
                         });
                     } else {
+                        isSyncActive = false; // Reset flag on empty rows
                         new Handler(Looper.getMainLooper()).post(() -> {
                             if (cb != null) cb.onResult(false, "No record rows returned from your Google Sheet.\n\n" +
                                 "💡 IMPORTANT FIX:\n" +
@@ -195,12 +212,14 @@ public class SheetsSync {
                         });
                     }
                 } else {
+                    isSyncActive = false; // Reset flag on fail status
                     String msg = json.optString("message", "Unknown error");
                     new Handler(Looper.getMainLooper()).post(() -> {
                         if (cb != null) cb.onResult(false, "Sync-back failed: " + msg);
                     });
                 }
             } catch (Exception e) {
+                isSyncActive = false; // Reset flag on exception
                 Log.e(TAG, "Sync-back error: " + e.getMessage());
                 new Handler(Looper.getMainLooper()).post(() -> {
                     if (cb != null) cb.onResult(false, "Sync-back error: " + e.getMessage() + "\n\n" +
@@ -335,7 +354,7 @@ public class SheetsSync {
             conn.setRequestMethod("GET");
             conn.setConnectTimeout(12_000);
             conn.setReadTimeout(15_000);
-            conn.setInstanceFollowRedirects(true); // Attempt auto-redirect first
+            conn.setInstanceFollowRedirects(false); // ALWAYS handle redirects manually for 100% domain-crossing safety!
 
             int code = conn.getResponseCode();
             
