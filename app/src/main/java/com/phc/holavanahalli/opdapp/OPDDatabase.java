@@ -41,8 +41,51 @@ public class OPDDatabase extends SQLiteOpenHelper {
             "status TEXT DEFAULT 'Completed'," +
             "registrationDate TEXT," +
             "registrationTime TEXT," +
-            "updatedAt INTEGER DEFAULT 0" + // Added for conflict resolution syncing
+            "updatedAt INTEGER DEFAULT 0" +
             ")");
+
+        // Seed 5 realistic test patients immediately on database creation
+        seedDatabaseWithTestData(db);
+    }
+
+    private void seedDatabaseWithTestData(SQLiteDatabase db) {
+        String todayDate = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(new Date());
+        
+        // Patient 1: Ramesh Kumar
+        insertSeedPatient(db, "OPD-0001", "Ramesh Kumar", 42, "Male", "9876543210", "O+", "Holavanahalli", "Fever & Cold", "Mild Viral Fever", "Tab. Paracetamol 500mg - 1-0-1 (3 days)", todayDate, "09:30 AM");
+        
+        // Patient 2: Savitha M
+        insertSeedPatient(db, "OPD-0002", "Savitha M", 29, "Female", "9988776655", "B+", "Akkirampura", "Headache", "Tension Headache", "Tab. Ibuprofen 400mg - 1-0-1 (2 days)", todayDate, "10:15 AM");
+        
+        // Patient 3: Raghunath
+        insertSeedPatient(db, "OPD-0003", "Raghunath", 65, "Male", "9448855221", "A+", "Holavanahalli", "BP Follow-up", "Essential Hypertension", "Tab. Amlodipine 5mg - 0-0-1 (Daily)", todayDate, "10:18 AM");
+        
+        // Patient 4: Anitha K
+        insertSeedPatient(db, "OPD-0004", "Anitha K", 8, "Female", "9776655443", "", "Sasalu", "Cough", "Acute Bronchitis", "Syr. Cetirizine 5ml - 0-0-1 (5 days)\nSyr. Ambroxol 5ml - 1-1-1 (5 days)", todayDate, "11:05 AM");
+        
+        // Patient 5: Girish Gowda
+        insertSeedPatient(db, "OPD-0005", "Girish Gowda", 51, "Male", "9554433221", "O-", "Koratagere", "Joint Pain", "Osteoarthritis Knee", "Tab. Diclofenac 50mg - 1-0-1 (5 days)\nTab. Pantoprazole 40mg - 1-0-0 (5 days)", todayDate, "11:45 AM");
+    }
+
+    private void insertSeedPatient(SQLiteDatabase db, String token, String name, int age, String gender, String mobile, String blood, String address, String complaint, String diagnosis, String treatment, String date, String time) {
+        ContentValues cv = new ContentValues();
+        cv.put("tokenNumber",      token);
+        cv.put("patientName",      name);
+        cv.put("age",              age);
+        cv.put("gender",           gender);
+        cv.put("mobileNumber",     mobile);
+        cv.put("bloodGroup",       blood);
+        cv.put("address",          address);
+        cv.put("chiefComplaint",   complaint);
+        cv.put("diagnosis",        diagnosis);
+        cv.put("treatmentGiven",   treatment);
+        cv.put("doctor",           "Dr. Muniraju K G");
+        cv.put("paymentMode",      "Free (PHC)");
+        cv.put("status",           "Completed");
+        cv.put("registrationDate", date);
+        cv.put("registrationTime", time);
+        cv.put("updatedAt",        System.currentTimeMillis());
+        db.insert(TABLE, null, cv);
     }
 
     @Override
