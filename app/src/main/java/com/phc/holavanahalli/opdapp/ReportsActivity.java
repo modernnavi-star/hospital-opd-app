@@ -213,11 +213,11 @@ public class ReportsActivity extends AppCompatActivity {
             // ── TABLE HEADER ──
             c.drawRect(14, y, W - 14, y + 16, pThBg);
             int x = 14;
-            for (int i = 0; i < CH.length; i++) {
+            for (int h = 0; h < CH.length; h++) {
                 pGreen.setTextSize(7f); pGreen.setTypeface(Typeface.DEFAULT_BOLD);
-                c.drawText(CH[i], x + 3, y + 11, pGreen);
-                c.drawLine(x + CW[i], y, x + CW[i], y + 16, pBorder);
-                x += CW[i];
+                c.drawText(CH[h], x + 3, y + 11, pGreen);
+                c.drawLine(x + CW[h], y, x + CW[h], y + 16, pBorder);
+                x += CW[h];
             }
             c.drawRect(14, y + 15, W - 14, y + 16, pBorder);
             y += 17;
@@ -228,10 +228,15 @@ public class ReportsActivity extends AppCompatActivity {
             for (int i = 0; i < currentPatients.size(); i++) {
                 Patient p = currentPatients.get(i);
 
-                // Wrap treatment text into lines
+                // Wrap treatment and complaints text cleanly into lines using word-wrap
                 String tx = nvl(p.treatmentGiven, "Nil");
                 List<String> txLines = wrapText(tx, CW[6] - 6, 7f);
-                int rowHeight = Math.max(ROW_H, txLines.size() * ROW_H) + 4;
+                
+                String comp = nvl(p.chiefComplaint, "—");
+                List<String> compLines = wrapText(comp, CW[5] - 6, 7f);
+                
+                int maxLines = Math.max(txLines.size(), compLines.size());
+                int rowHeight = Math.max(ROW_H, maxLines * ROW_H) + 4;
 
                 // Check page break
                 if (y + rowHeight > H - 20) {
@@ -276,7 +281,7 @@ public class ReportsActivity extends AppCompatActivity {
                 c.drawLine(x + CW[1], y, x + CW[1], y + rowHeight, pBorder);
                 x += CW[1];
 
-                // Col 2: Name
+                // Col 2: Patient Name (truncated if too long)
                 pBlack.setTextSize(7.5f);
                 String name = nvl(p.patientName,"—");
                 if (name.length() > 14) name = name.substring(0,13)+"…";
@@ -299,9 +304,8 @@ public class ReportsActivity extends AppCompatActivity {
                 c.drawLine(x + CW[4], y, x + CW[4], y + rowHeight, pBorder);
                 x += CW[4];
 
-                // Col 5: Complaint (wrap if needed)
+                // Col 5: Complaint (wrapped)
                 pBlue.setTextSize(7f);
-                List<String> compLines = wrapText(nvl(p.chiefComplaint,"—"), CW[5] - 6, 7f);
                 for (int cl = 0; cl < compLines.size(); cl++) {
                     c.drawText(compLines.get(cl), x + 2, y + 10 + cl * ROW_H, pBlue);
                 }
@@ -346,24 +350,49 @@ public class ReportsActivity extends AppCompatActivity {
         }
     }
 
-    // ── Word-wrap text to fit column width ────────────────────
+    // ── Word-wrap text to fit column width cleanly ────────────────────
     private List<String> wrapText(String text, int maxWidth, float textSize) {
         List<String> lines = new ArrayList<>();
-        if (text == null || text.isEmpty()) { lines.add("—"); return lines; }
-        Paint p = new Paint(); p.setTextSize(textSize);
-        String[] words = text.split("[\\n,;]+");
-        for (String word : words) {
-            word = word.trim();
-            if (word.isEmpty()) continue;
-            if (p.measureText(word) <= maxWidth) {
-                lines.add(word);
-            } else {
-                // Truncate with ellipsis
-                while (word.length() > 2 && p.measureText(word + "…") > maxWidth)
-                    word = word.substring(0, word.length() - 1);
-                lines.add(word + "…");
+        if (text == null || text.trim().isEmpty()) { 
+            lines.add("—"); 
+            return lines; 
+        }
+        
+        Paint paint = new Paint(); 
+        paint.setTextSize(textSize);
+        
+        // Split by explicit newlines
+        String[] paragraphs = text.split("\\n");
+        for (String paragraph : paragraphs) {
+            String[] words = paragraph.split("\\s+");
+            StringBuilder currentLine = new StringBuilder();
+            
+            for (String word : words) {
+                if (word.isEmpty()) continue;
+                
+                String testLine = currentLine.length() == 0 ? word : currentLine + " " + word;
+                if (paint.measureText(testLine) <= maxWidth) {
+                    currentLine.append(currentLine.length() == 0 ? "" : " ").append(word);
+                } else {
+                    if (currentLine.length() > 0) {
+                        lines.add(currentLine.toString());
+                        currentLine = new StringBuilder(word);
+                    } else {
+                        // Single word is wider than column, truncate with ellipsis
+                        String truncated = word;
+                        while (truncated.length() > 2 && paint.measureText(truncated + "…") > maxWidth) {
+                            truncated = truncated.substring(0, truncated.length() - 1);
+                        }
+                        lines.add(truncated + "…");
+                        currentLine = new StringBuilder();
+                    }
+                }
+            }
+            if (currentLine.length() > 0) {
+                lines.add(currentLine.toString());
             }
         }
+        
         if (lines.isEmpty()) lines.add("—");
         return lines;
     }
