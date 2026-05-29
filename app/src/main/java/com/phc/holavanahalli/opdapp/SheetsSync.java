@@ -71,6 +71,17 @@ public class SheetsSync {
         }).start();
     }
 
+    // ── Safe Helpers for Row Parsing (Handles empty cells at end of sheet rows) ──
+    private static String getRowString(JSONArray row, int idx) {
+        if (row == null || idx < 0 || idx >= row.length()) return "";
+        return row.optString(idx, "");
+    }
+
+    private static int getRowInt(JSONArray row, int idx) {
+        if (row == null || idx < 0 || idx >= row.length()) return 0;
+        return row.optInt(idx, 0);
+    }
+
     // ── Download and Sync Data back from Sheets/Drive to Local DB ──
     public static void syncBackFromSheet(Context ctx, SyncCallback cb) {
         String url = getWebAppUrl(ctx);
@@ -86,23 +97,28 @@ public class SheetsSync {
                         // Skip index 0 (header row)
                         for (int i = 1; i < rows.length(); i++) {
                             JSONArray row = rows.optJSONArray(i);
-                            if (row != null && row.length() >= 15) {
+                            if (row != null && row.length() > 0) {
+                                String opdNo = getRowString(row, 0);
+                                if (opdNo == null || opdNo.trim().isEmpty() || !opdNo.contains("OPD")) {
+                                    continue; // skip invalid or empty rows
+                                }
+                                
                                 Patient p = new Patient();
-                                p.tokenNumber      = row.optString(0);
-                                p.registrationDate = row.optString(1);
-                                p.registrationTime = row.optString(2);
-                                p.patientName      = row.optString(3);
-                                p.age              = row.optInt(4, 0);
-                                p.gender           = row.optString(5);
-                                p.address          = row.optString(6);
-                                p.mobileNumber     = row.optString(7);
-                                p.bloodGroup       = row.optString(8);
-                                p.chiefComplaint   = row.optString(9);
-                                p.diagnosis        = row.optString(10);
-                                p.treatmentGiven   = row.optString(11);
-                                p.doctor           = row.optString(12);
-                                p.paymentMode      = row.optString(13);
-                                p.status           = row.optString(14);
+                                p.tokenNumber      = opdNo;
+                                p.registrationDate = getRowString(row, 1);
+                                p.registrationTime = getRowString(row, 2);
+                                p.patientName      = getRowString(row, 3);
+                                p.age              = getRowInt(row, 4);
+                                p.gender           = getRowString(row, 5);
+                                p.address          = getRowString(row, 6);
+                                p.mobileNumber     = getRowString(row, 7);
+                                p.bloodGroup       = getRowString(row, 8);
+                                p.chiefComplaint   = getRowString(row, 9);
+                                p.diagnosis        = getRowString(row, 10);
+                                p.treatmentGiven   = getRowString(row, 11);
+                                p.doctor           = getRowString(row, 12);
+                                p.paymentMode      = getRowString(row, 13);
+                                p.status           = getRowString(row, 14);
                                 
                                 db.insertPatientFromSync(p);
                                 count++;
