@@ -46,6 +46,32 @@ public class SettingsActivity extends AppCompatActivity {
         "      return ok2({ rows: rows, total: rows.length - 1 });\n" +
         "    } catch (err) { return error(err.message); }\n" +
         "  }\n" +
+        "  if (e && e.parameter && e.parameter.opdNo) {\n" +
+        "    try {\n" +
+        "      var sheet = getOrCreateSheet();\n" +
+        "      var d = {\n" +
+        "        opdNo: e.parameter.opdNo,\n" +
+        "        date: e.parameter.date,\n" +
+        "        time: e.parameter.time,\n" +
+        "        patientName: e.parameter.patientName,\n" +
+        "        age: Number(e.parameter.age) || 0,\n" +
+        "        gender: e.parameter.gender,\n" +
+        "        village: e.parameter.village,\n" +
+        "        mobile: e.parameter.mobile,\n" +
+        "        bloodGroup: e.parameter.bloodGroup || \"\",\n" +
+        "        complaint: e.parameter.complaint,\n" +
+        "        diagnosis: e.parameter.diagnosis,\n" +
+        "        treatment: e.parameter.treatment,\n" +
+        "        doctor: e.parameter.doctor,\n" +
+        "        paymentMode: e.parameter.paymentMode,\n" +
+        "        status: e.parameter.status,\n" +
+        "        hospital: e.parameter.hospital || \"PHC Holavanahalli\",\n" +
+        "        updatedAt: Number(e.parameter.updatedAt) || 0\n" +
+        "      };\n" +
+        "      appendPatient(sheet, d);\n" +
+        "      return ok(\"Saved via GET: \" + d.opdNo);\n" +
+        "    } catch (err) { return error(err.message); }\n" +
+        "  }\n" +
         "  return ok(\"PHC Holavanahalli OPD Sync API is running! Records in sheet: \" +\n" +
         "    (getOrCreateSheet().getLastRow() - 1));\n" +
         "}\n\n" +

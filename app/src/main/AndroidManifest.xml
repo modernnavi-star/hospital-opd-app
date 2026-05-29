@@ -29,5 +29,16 @@
         <activity android:name=".SettingsActivity" android:exported="false" />
         <activity android:name=".SyncViewerActivity" android:exported="false" />
 
+        <!-- FileProvider required to safely share and open generated PDF reports -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.phc.holavanahalli.opdapp.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
     </application>
 </manifest>

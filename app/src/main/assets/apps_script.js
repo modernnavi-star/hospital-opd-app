@@ -19,7 +19,7 @@ function doPost(e) {
   } catch (err) { return error(err.message); }
 }
 
-// ── GET: read all data (for bidirectional sync and app restore) ───────────────────
+// ── GET: read all data (for bidirectional sync) and single record query parameter saving ──
 function doGet(e) {
   var action = e && e.parameter ? e.parameter.action : "";
   if (action === "getData") {
@@ -29,6 +29,35 @@ function doGet(e) {
       return ok2({ rows: rows, total: rows.length - 1 });
     } catch (err) { return error(err.message); }
   }
+  
+  // Support saving single records via GET query parameters (used by real-time syncPatient)
+  if (e && e.parameter && e.parameter.opdNo) {
+    try {
+      var sheet = getOrCreateSheet();
+      var d = {
+        opdNo: e.parameter.opdNo,
+        date: e.parameter.date,
+        time: e.parameter.time,
+        patientName: e.parameter.patientName,
+        age: Number(e.parameter.age) || 0,
+        gender: e.parameter.gender,
+        village: e.parameter.village,
+        mobile: e.parameter.mobile,
+        bloodGroup: e.parameter.bloodGroup || "",
+        complaint: e.parameter.complaint,
+        diagnosis: e.parameter.diagnosis,
+        treatment: e.parameter.treatment,
+        doctor: e.parameter.doctor,
+        paymentMode: e.parameter.paymentMode,
+        status: e.parameter.status,
+        hospital: e.parameter.hospital || "PHC Holavanahalli",
+        updatedAt: Number(e.parameter.updatedAt) || 0
+      };
+      appendPatient(sheet, d);
+      return ok("Saved via GET: " + d.opdNo);
+    } catch (err) { return error(err.message); }
+  }
+  
   return ok("PHC Holavanahalli OPD Sync API is running! Records in sheet: " +
     (getOrCreateSheet().getLastRow() - 1));
 }
