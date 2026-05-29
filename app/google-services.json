@@ -1,0 +1,28 @@
+{
+  "project_info": {
+    "project_number": "123456789012",
+    "project_id": "dummy-project-id",
+    "storage_bucket": "dummy-project-id.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:123456789012:android:abcdefghijklmnopqrstuvwxyz",
+        "android_client_info": {
+          "package_name": "com.phc.holavanahalli.opdapp"
+        }
+      },
+      "api_key": [
+        {
+          "current_key": "AIzaDummyKey_Example_12345"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "app_id": "1:123456789012:android:abcdefghijklmnopqrstuvwxyz"
+        }
+      }
+    }
+  ],
+  "configuration_version": "3"
+}
