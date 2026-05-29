@@ -88,6 +88,8 @@ public class SheetsSync {
         new Thread(() -> {
             try {
                 String response = get(url + "?action=getData");
+                Log.d(TAG, "Sync-back raw response: " + response);
+                
                 JSONObject json = new JSONObject(response);
                 if ("success".equals(json.optString("status"))) {
                     JSONArray rows = json.optJSONArray("rows");
@@ -130,7 +132,9 @@ public class SheetsSync {
                         });
                     } else {
                         new Handler(Looper.getMainLooper()).post(() -> {
-                            if (cb != null) cb.onResult(true, "No records found in Google Sheet.");
+                            if (cb != null) cb.onResult(false, "No record rows returned from your Google Sheet.\n\n" +
+                                "💡 IMPORTANT FIX:\n" +
+                                "Please make sure you have copied and redeployed the LATEST Apps Script from Settings into your Google Sheet to allow reading data back into the app.");
                         });
                     }
                 } else {
@@ -142,7 +146,8 @@ public class SheetsSync {
             } catch (Exception e) {
                 Log.e(TAG, "Sync-back error: " + e.getMessage());
                 new Handler(Looper.getMainLooper()).post(() -> {
-                    if (cb != null) cb.onResult(false, "Sync-back error: " + e.getMessage());
+                    if (cb != null) cb.onResult(false, "Sync-back error: " + e.getMessage() + "\n\n" +
+                        "💡 Please check your internet connection and ensure your Google Web App URL is correctly entered in Settings.");
                 });
             }
         }).start();
@@ -172,25 +177,47 @@ public class SheetsSync {
         return URLEncoder.encode(s != null ? s : "", "UTF-8");
     }
 
-    // ── HTTP GET ─────────────────────────────────────────────────────
+    // ── HTTP GET with Robust Manual Redirect Following (Resolves Google's HTTPS redirects) ──
     private static String get(String urlStr) throws Exception {
-        URL url = new URL(urlStr);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestMethod("GET");
-        conn.setConnectTimeout(12_000);
-        conn.setReadTimeout(15_000);
-        HttpURLConnection.setFollowRedirects(true);
+        int redirects = 0;
+        String currentUrl = urlStr;
+        
+        while (redirects < 5) {
+            URL url = new URL(currentUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setConnectTimeout(12_000);
+            conn.setReadTimeout(15_000);
+            conn.setInstanceFollowRedirects(true); // Attempt auto-redirect first
 
-        int code = conn.getResponseCode();
-        InputStream is = (code >= 200 && code < 400)
-            ? conn.getInputStream() : conn.getErrorStream();
-        if (is == null) return "HTTP " + code;
+            int code = conn.getResponseCode();
+            
+            // Manually follow 301 / 302 / 303 / 307 / 308 redirects (cross-protocol/cross-domain support)
+            if (code == HttpURLConnection.HTTP_MOVED_TEMP || 
+                code == HttpURLConnection.HTTP_MOVED_PERM || 
+                code == 303 || code == 307 || code == 308) {
+                
+                String location = conn.getHeaderField("Location");
+                if (location != null && !location.isEmpty()) {
+                    currentUrl = location;
+                    redirects++;
+                    conn.disconnect();
+                    continue; // follow the redirect manually
+                }
+            }
 
-        BufferedReader br = new BufferedReader(new InputStreamReader(is));
-        StringBuilder sb = new StringBuilder();
-        String line;
-        while ((line = br.readLine()) != null) sb.append(line);
-        return sb.toString();
+            InputStream is = (code >= 200 && code < 400)
+                ? conn.getInputStream() : conn.getErrorStream();
+            if (is == null) return "HTTP " + code;
+
+            BufferedReader br = new BufferedReader(new InputStreamReader(is));
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = br.readLine()) != null) sb.append(line);
+            conn.disconnect();
+            return sb.toString();
+        }
+        throw new IOException("Too many redirects");
     }
 
     // ── Retry queue ──────────────────────────────────────────────────
