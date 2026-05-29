@@ -71,8 +71,10 @@ public class OPDDatabase extends SQLiteOpenHelper {
         cv.put("registrationDate", p.registrationDate);
         cv.put("registrationTime", p.registrationTime);
         long rowId = db.insert(TABLE, null, cv);
-        // Auto-sync to Google Sheets / Drive
-        SheetsSync.syncPatient(context, p);
+        
+        // Auto-sync to Google Sheets / Drive (DISABLED for pure offline mode)
+        // SheetsSync.syncPatient(context, p);
+        
         return rowId;
     }
 
@@ -126,7 +128,7 @@ public class OPDDatabase extends SQLiteOpenHelper {
     }
 
     public void deletePatient(int id) {
-        // Get patient token before deleting (needed for sheet sync)
+        // Get patient token before deleting
         String tokenNumber = "";
         SQLiteDatabase rdb = getReadableDatabase();
         Cursor cur = rdb.rawQuery("SELECT tokenNumber FROM " + TABLE + " WHERE id=?",
@@ -137,10 +139,10 @@ public class OPDDatabase extends SQLiteOpenHelper {
         // Delete from local DB
         getWritableDatabase().delete(TABLE, "id=?", new String[]{String.valueOf(id)});
 
-        // Sync deletion to Google Sheet
-        if (!tokenNumber.isEmpty()) {
-            SheetsSync.deleteFromSheet(context, tokenNumber);
-        }
+        // Sync deletion to Google Sheet (DISABLED for pure offline mode)
+        // if (!tokenNumber.isEmpty()) {
+        //     SheetsSync.deleteFromSheet(context, tokenNumber);
+        // }
     }
 
     public String getNextToken() {

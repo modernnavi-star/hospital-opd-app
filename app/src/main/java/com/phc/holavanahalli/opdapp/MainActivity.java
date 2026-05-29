@@ -62,11 +62,11 @@ public class MainActivity extends AppCompatActivity {
         cardReports.setOnClickListener(v ->
             startActivity(new Intent(this, ReportsActivity.class)));
 
-        // Flush retry queue on app start
-        SheetsSync.flushRetryQueue(this);
+        // Flush retry queue on app start (DISABLED for offline mode)
+        // SheetsSync.flushRetryQueue(this);
 
-        // Check and trigger sync back from Sheets immediately on update/reinstall
-        checkAndSyncBackData();
+        // Check and trigger sync back from Sheets (DISABLED for offline mode)
+        // checkAndSyncBackData();
     }
 
     private void checkAndSyncBackData() {
