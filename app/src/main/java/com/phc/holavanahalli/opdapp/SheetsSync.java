@@ -90,6 +90,27 @@ public class SheetsSync {
                 String response = get(url + "?action=getData");
                 Log.d(TAG, "Sync-back raw response: " + response);
                 
+                // Detect Google login/permission block html page
+                String trimmed = response.trim();
+                if (trimmed.startsWith("<!doctype") || 
+                    trimmed.startsWith("<!DOCTYPE") || 
+                    trimmed.startsWith("<html") || 
+                    response.contains("accounts.google.com") ||
+                    response.contains("ServiceLogin")) {
+                    
+                    new Handler(Looper.getMainLooper()).post(() -> {
+                        if (cb != null) cb.onResult(false, 
+                            "🔒 Permission Denied by Google (Sign-in Required)\n\n" +
+                            "💡 HOW TO FIX THIS IN 30 SECONDS:\n" +
+                            "Your Google Web App is configured incorrectly and is blocking access. You must allow access to 'Anyone':\n\n" +
+                            "1. Open your Google Sheet and click 'Extensions -> Apps Script'.\n" +
+                            "2. Click the 'Deploy' button in the top-right and select 'New Deployment'.\n" +
+                            "3. Under 'Who has access', change it from 'Only myself' to 'Anyone' (this is crucial!).\n" +
+                            "4. Click 'Deploy' and copy the new Web App URL into your App's Settings.");
+                    });
+                    return;
+                }
+                
                 JSONObject json = new JSONObject(response);
                 if ("success".equals(json.optString("status"))) {
                     JSONArray rows = json.optJSONArray("rows");
