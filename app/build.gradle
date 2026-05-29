@@ -1,6 +1,6 @@
 plugins {
     id 'com.android.application'
-    // Note: The user will need to add the google-services plugin in the project-level build.gradle
+    id 'com.google.gms.google-services'
 }
 
 android {
