@@ -74,10 +74,11 @@ public class MainActivity extends AppCompatActivity {
         int lastRunVersion = prefs.getInt("last_run_version", 0);
         boolean isDbEmpty = OPDDatabase.getInstance(this).getAllPatients().isEmpty();
 
-        // Trigger immediate sync back if app version was updated OR if the local database is empty (reinstall)
-        if (lastRunVersion < CURRENT_APP_VERSION || isDbEmpty) {
-            Toast.makeText(this, "🔄 Re-syncing database with Cloud Storage...", Toast.LENGTH_LONG).show();
-
+        // If the database is empty (meaning a reinstall), show a clear dialog prompting them to restore!
+        if (isDbEmpty) {
+            showRestoreDialog();
+        } else if (lastRunVersion < CURRENT_APP_VERSION) {
+            // On simple update, do a silent background sync-back
             SheetsSync.syncBackFromSheet(this, new SheetsSync.SyncCallback() {
                 @Override
                 public void onResult(boolean success, String message) {
@@ -85,14 +86,64 @@ public class MainActivity extends AppCompatActivity {
                         prefs.edit().putInt("last_run_version", CURRENT_APP_VERSION).apply();
                         runOnUiThread(() -> {
                             updateStats();
-                            Toast.makeText(MainActivity.this, "✅ Cloud database is up to date!", Toast.LENGTH_LONG).show();
                         });
-                    } else {
-                        Log.e("MainActivity", "Sync back failed: " + message);
                     }
                 }
             });
         }
+    }
+
+    private void showRestoreDialog() {
+        androidx.appcompat.app.AlertDialog.Builder builder = new androidx.appcompat.app.AlertDialog.Builder(this);
+        builder.setTitle("📥 Cloud Data Restore");
+        builder.setMessage("We detected an empty local database (reinstall or first run).\n\n" +
+            "Would you like to restore your existing patient records back from your Google Sheet/Drive backup?\n\n" +
+            "⚠️ IMPORTANT:\n" +
+            "1. If you used a custom Google Sheet URL, please configure it in Settings first.\n" +
+            "2. Make sure you have copied and redeployed the latest Apps Script from Settings so the sheet allows reading data.");
+        
+        builder.setPositiveButton("Restore Now", (dialog, which) -> {
+            Toast.makeText(this, "⏳ Connecting to Google Sheet...", Toast.LENGTH_SHORT).show();
+            SheetsSync.syncBackFromSheet(this, new SheetsSync.SyncCallback() {
+                @Override
+                public void onResult(boolean success, String message) {
+                    runOnUiThread(() -> {
+                        if (success) {
+                            getSharedPreferences("phc_prefs", MODE_PRIVATE)
+                                .edit().putInt("last_run_version", CURRENT_APP_VERSION).apply();
+                            updateStats();
+                            androidx.appcompat.app.AlertDialog.Builder successBuilder = new androidx.appcompat.app.AlertDialog.Builder(MainActivity.this);
+                            successBuilder.setTitle("✅ Restore Successful");
+                            successBuilder.setMessage(message + "\nYour local database has been successfully updated!");
+                            successBuilder.setPositiveButton("OK", null);
+                            successBuilder.show();
+                        } else {
+                            androidx.appcompat.app.AlertDialog.Builder failBuilder = new androidx.appcompat.app.AlertDialog.Builder(MainActivity.this);
+                            failBuilder.setTitle("❌ Restore Failed");
+                            failBuilder.setMessage(message + "\n\n💡 Troubleshooting:\n" +
+                                "1. Ensure you have entered the correct Web App URL in settings.\n" +
+                                "2. Make sure you copied the latest Apps Script from Settings, pasted it in your Sheet, and clicked 'Deploy -> New Deployment'.");
+                            failBuilder.setPositiveButton("Configure Settings", (d, w) -> {
+                                startActivity(new Intent(MainActivity.this, SettingsActivity.class));
+                            });
+                            failBuilder.setNegativeButton("Cancel", null);
+                            failBuilder.show();
+                        }
+                    });
+                }
+            });
+        });
+        
+        builder.setNeutralButton("Configure Settings", (dialog, which) -> {
+            startActivity(new Intent(this, SettingsActivity.class));
+        });
+        
+        builder.setNegativeButton("Later", (dialog, which) -> {
+            dialog.dismiss();
+        });
+        
+        builder.setCancelable(false);
+        builder.show();
     }
 
     @Override

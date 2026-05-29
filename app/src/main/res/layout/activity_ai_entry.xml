@@ -117,7 +117,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Typing Input Card -->
+            <!-- Typing Input Card (Always Visible for Hybrid Flow) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardTypingInput"
                 android:layout_width="match_parent"
@@ -125,7 +125,7 @@
                 android:layout_marginBottom="12dp"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="3dp"
-                android:visibility="gone">
+                android:visibility="visible">
 
                 <LinearLayout android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -135,11 +135,85 @@
                     <TextView android:id="@+id/tvTypingLabel"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="⌨️ Type or Edit Answer"
+                        android:text="⌨️ Type or Edit Answer (Tap field below)"
                         android:textSize="13sp"
                         android:textStyle="bold"
                         android:textColor="@color/purple"
                         android:layout_marginBottom="8dp"/>
+
+                    <!-- Horizontal scroll of chips to select a field manually at any time -->
+                    <HorizontalScrollView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:scrollbars="none"
+                        android:layout_marginBottom="10dp">
+                        
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="2dp">
+                            
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/chipName"
+                                style="@style/Widget.MaterialComponents.Button.TextButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="👤 Name"
+                                android:textSize="12sp"
+                                android:textColor="@color/purple"
+                                android:layout_marginEnd="6dp"/>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/chipAge"
+                                style="@style/Widget.MaterialComponents.Button.TextButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="🎂 Age"
+                                android:textSize="12sp"
+                                android:textColor="@color/purple"
+                                android:layout_marginEnd="6dp"/>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/chipGender"
+                                style="@style/Widget.MaterialComponents.Button.TextButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="⚧ Gender"
+                                android:textSize="12sp"
+                                android:textColor="@color/purple"
+                                android:layout_marginEnd="6dp"/>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/chipVillage"
+                                style="@style/Widget.MaterialComponents.Button.TextButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="📍 Village"
+                                android:textSize="12sp"
+                                android:textColor="@color/purple"
+                                android:layout_marginEnd="6dp"/>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/chipComplaint"
+                                style="@style/Widget.MaterialComponents.Button.TextButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="🤒 Complaint"
+                                android:textSize="12sp"
+                                android:textColor="@color/purple"
+                                android:layout_marginEnd="6dp"/>
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/chipTreatment"
+                                style="@style/Widget.MaterialComponents.Button.TextButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="💊 Treatment"
+                                android:textSize="12sp"
+                                android:textColor="@color/purple"/>
+                        </LinearLayout>
+                    </HorizontalScrollView>
 
                     <LinearLayout android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -150,7 +224,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:hint="Type answer here..."
+                            android:hint="Select a field above to start typing..."
                             android:textSize="16sp"
                             android:inputType="textCapWords"
                             android:textColor="#111827"

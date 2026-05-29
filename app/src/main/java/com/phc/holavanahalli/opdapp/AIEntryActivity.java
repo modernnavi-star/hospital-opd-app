@@ -33,6 +33,7 @@ public class AIEntryActivity extends AppCompatActivity
     View           cardTypingInput;
     EditText       etTypeInput;
     MaterialButton btnSubmitType;
+    MaterialButton chipName, chipAge, chipGender, chipVillage, chipComplaint, chipTreatment;
 
     // ── Speech ──────────────────────────────────────────────────
     SpeechRecognizer recognizer;
@@ -121,6 +122,21 @@ public class AIEntryActivity extends AppCompatActivity
         etTypeInput     = findViewById(R.id.etTypeInput);
         btnSubmitType   = findViewById(R.id.btnSubmitType);
 
+        // Chip Buttons
+        chipName      = findViewById(R.id.chipName);
+        chipAge       = findViewById(R.id.chipAge);
+        chipGender    = findViewById(R.id.chipGender);
+        chipVillage   = findViewById(R.id.chipVillage);
+        chipComplaint = findViewById(R.id.chipComplaint);
+        chipTreatment = findViewById(R.id.chipTreatment);
+
+        if (chipName != null)      chipName.setOnClickListener(v -> selectFieldForTyping(F_NAME));
+        if (chipAge != null)       chipAge.setOnClickListener(v -> selectFieldForTyping(F_AGE));
+        if (chipGender != null)    chipGender.setOnClickListener(v -> selectFieldForTyping(F_GENDER));
+        if (chipVillage != null)   chipVillage.setOnClickListener(v -> selectFieldForTyping(F_ADDRESS));
+        if (chipComplaint != null) chipComplaint.setOnClickListener(v -> selectFieldForTyping(F_COMPLAINT));
+        if (chipTreatment != null) chipTreatment.setOnClickListener(v -> selectFieldForTyping(F_TREATMENT));
+
         if (btnSubmitType != null) {
             btnSubmitType.setOnClickListener(v -> submitManualInput());
         }
@@ -179,6 +195,7 @@ public class AIEntryActivity extends AppCompatActivity
 
         setProgress("⚪ ⚪ ⚪ ⚪ ⚪ ⚪");
         if (cardTypingInput != null) {
+            // Hide during initial voice recording to prevent distraction
             cardTypingInput.setVisibility(View.GONE);
         }
 
@@ -420,6 +437,9 @@ public class AIEntryActivity extends AppCompatActivity
             tvLiveText.setText("✅ Got it — checking what was captured...");
             tvLiveText.setTextColor(0xFF059669);
             tvInstruction.setText("🔍 Extracting details...");
+            if (cardTypingInput != null) {
+                cardTypingInput.setVisibility(View.VISIBLE);
+            }
         });
 
         // Extract everything from what doctor said using regex
@@ -526,6 +546,64 @@ public class AIEntryActivity extends AppCompatActivity
         return missing;
     }
 
+    // ── SELECT FIELD FOR MANUAL TYPING ───────────────────────────
+    private void selectFieldForTyping(int fieldIdx) {
+        if (patient == null) {
+            // Initialize patient if starting directly via manual click
+            patient = new Patient();
+            patient.tokenNumber      = OPDDatabase.getInstance(this).getNextToken();
+            patient.registrationDate = fmt("dd/MM/yyyy");
+            patient.registrationTime = fmt("hh:mm a");
+            patient.doctor           = "Dr. Muniraju K G";
+            patient.paymentMode      = "Free (PHC)";
+            patient.status           = "Completed";
+            patient.diagnosis        = "";
+            patient.mobileNumber     = "";
+            sessionActive = true;
+
+            btnStartStop.setText("❌ Cancel");
+            tint(btnStartStop, 0xFFDC2626);
+        }
+
+        phase = PHASE_FILLING;
+        step = fieldIdx;
+
+        // Stop speech recognition to prevent conflicts
+        stopRecognizer();
+
+        runOnUiThread(() -> {
+            tvFieldLabel.setText(FIELD_ICONS[fieldIdx] + " " + FIELD_NAMES[fieldIdx]);
+            tvQuestion.setText("⌨️ Edit or type: " + FIELD_NAMES[fieldIdx]);
+
+            if (cardTypingInput != null) {
+                cardTypingInput.setVisibility(View.VISIBLE);
+                etTypeInput.setHint("Type " + FIELD_NAMES[fieldIdx] + "...");
+
+                // Pre-fill with existing value if any
+                String existingVal = getFieldValue(fieldIdx);
+                etTypeInput.setText(existingVal.equals("—") ? "" : existingVal);
+                etTypeInput.requestFocus();
+                if (etTypeInput.getText() != null) {
+                    etTypeInput.setSelection(etTypeInput.getText().length());
+                }
+            }
+        });
+        updatePatientCard();
+    }
+
+    private String getFieldValue(int fieldIdx) {
+        if (patient == null) return "";
+        switch (fieldIdx) {
+            case F_NAME:      return nvl(patient.patientName, "");
+            case F_AGE:       return patient.age > 0 ? String.valueOf(patient.age) : "";
+            case F_GENDER:    return nvl(patient.gender, "");
+            case F_ADDRESS:   return nvl(patient.address, "");
+            case F_COMPLAINT: return nvl(patient.chiefComplaint, "");
+            case F_TREATMENT: return nvl(patient.treatmentGiven, "");
+            default:          return "";
+        }
+    }
+
     // ── ASK MISSING FIELDS ONE BY ONE ───────────────────────────
     private void askNextMissing(List<Integer> missing, int idx) {
         if (!sessionActive) return;
@@ -546,8 +624,13 @@ public class AIEntryActivity extends AppCompatActivity
             if (cardTypingInput != null) {
                 cardTypingInput.setVisibility(View.VISIBLE);
                 etTypeInput.setHint("Type " + FIELD_NAMES[fieldIdx] + "...");
-                etTypeInput.setText("");
+                
+                String existingVal = getFieldValue(fieldIdx);
+                etTypeInput.setText(existingVal.equals("—") ? "" : existingVal);
                 etTypeInput.requestFocus();
+                if (etTypeInput.getText() != null) {
+                    etTypeInput.setSelection(etTypeInput.getText().length());
+                }
             }
         });
         updatePatientCard();
@@ -605,11 +688,6 @@ public class AIEntryActivity extends AppCompatActivity
         stopRecognizer();
 
         String raw = etTypeInput.getText().toString().trim();
-        if (raw.isEmpty()) {
-            Toast.makeText(this, "Please enter some text or speak", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         String val = autoCorrect(step, raw);
         applyField(step, val);
 
@@ -621,14 +699,15 @@ public class AIEntryActivity extends AppCompatActivity
             etTypeInput.setText("");
         });
 
-        // Move to next field after short delay
-        handler.postDelayed(() -> {
-            if (pendingCallback != null) {
-                Runnable cb = pendingCallback;
-                pendingCallback = null;
-                cb.run();
-            }
-        }, 800);
+        // Check for remaining missing fields to build an automated helper flow!
+        List<Integer> missing = getMissingFields();
+        if (missing.isEmpty()) {
+            handler.postDelayed(this::finalSave, 800);
+        } else {
+            // Auto-advance to the next missing field in the queue
+            int nextField = missing.get(0);
+            handler.postDelayed(() -> selectFieldForTyping(nextField), 500);
+        }
     }
 
     // ── AUTO-CORRECT PER FIELD ───────────────────────────────────
@@ -693,7 +772,9 @@ public class AIEntryActivity extends AppCompatActivity
             tvLiveText.setText("");
             tvInstruction.setText("All done — no button needed");
             if (cardTypingInput != null) {
-                cardTypingInput.setVisibility(View.GONE);
+                // Return typing input back to standard selector state
+                etTypeInput.setHint("Select a field above to start typing...");
+                etTypeInput.setText("");
             }
             updatePatientCard();
             btnStartStop.setText("➕ New Patient");
@@ -763,8 +844,13 @@ public class AIEntryActivity extends AppCompatActivity
                 "━━━━━━━━━━━━━━━━━━━━\n🩺 Dr. Muniraju K G  |  Free PHC");
             btnStartStop.setText("🚀 Start Voice Entry");
             tint(btnStartStop, 0xFF14532D);
-            if (cardTypingInput != null) cardTypingInput.setVisibility(View.GONE);
-            if (etTypeInput != null) etTypeInput.setText("");
+            if (cardTypingInput != null) {
+                cardTypingInput.setVisibility(View.VISIBLE);
+            }
+            if (etTypeInput != null) {
+                etTypeInput.setText("");
+                etTypeInput.setHint("Select a field above to start typing...");
+            }
         });
     }
 
